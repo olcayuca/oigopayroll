@@ -15,6 +15,9 @@
                 <div class="flex flex-col gap-6">
                     {{ $slot }}
                 </div>
+                @if (\App\Models\PolicyDocument::where('type', \App\Enums\PolicyType::Disclosure)->whereNotNull('published_at')->exists())
+                    <a href="{{ route('kvkk.document', 'aydinlatma') }}" target="_blank" class="mt-4 text-center text-xs text-zinc-500 hover:underline">KVKK Aydınlatma Metni</a>
+                @endif
             </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
+use App\Http\Controllers\DownloadPersonalData;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,6 +38,8 @@ Route::domain(config('portals.admin'))
         Route::livewire('yasal-parametreler', 'pages::admin.parameters.index')->name('parameters.index');
         Route::livewire('bordro-kodlari', 'pages::admin.codes.index')->name('codes.index');
         Route::livewire('calisma-takvimi', 'pages::admin.holidays.index')->name('holidays.index');
+        Route::livewire('kvkk', 'pages::admin.kvkk.index')->name('kvkk.index');
+        Route::get('kvkk/basvurular/{kvkkRequest}/veri', DownloadPersonalData::class)->name('kvkk.export');
     });
 
 // panel.siteadi.com: client firms

@@ -27,7 +27,7 @@ class SecureAdminPortal
      *
      * @var list<string>
      */
-    private const TWO_FACTOR_SETUP_ROUTES = [
+    public const TWO_FACTOR_SETUP_ROUTES = [
         'security.edit', 'logout', 'two-factor.*', 'password.confirm', 'password.confirmation', 'password.confirm.store',
         'user-password.update', 'livewire.*', 'default-livewire.*',
     ];

@@ -113,7 +113,10 @@
         <footer class="border-t border-zinc-100">
             <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-zinc-500 sm:px-6">
                 <span>© {{ now()->year }} {{ $companyTitle }}</span>
-                <a href="{{ $loginUrl }}" class="hover:text-zinc-900">Müşteri Paneli</a>
+                <div class="flex flex-wrap gap-4">
+                    <a href="{{ route('kvkk.document', 'aydinlatma') }}" class="hover:text-zinc-900">KVKK Aydınlatma Metni</a>
+                    <a href="{{ $loginUrl }}" class="hover:text-zinc-900">Müşteri Paneli</a>
+                </div>
             </div>
         </footer>
     </body>

@@ -57,6 +57,16 @@ enum AuditEvent: string
     case WebsiteChanged = 'system.website_changed';
     case ParameterChanged = 'system.parameter_changed';
 
+    // KVKK
+    case PolicyPublished = 'kvkk.policy_published';
+    case ConsentGiven = 'kvkk.consent_given';
+    case ConsentRefused = 'kvkk.consent_refused';
+    case ConsentRevoked = 'kvkk.consent_revoked';
+    case KvkkRequestCreated = 'kvkk.request_created';
+    case KvkkRequestUpdated = 'kvkk.request_updated';
+    case PersonalDataExported = 'kvkk.data_exported';
+    case UserAnonymized = 'kvkk.user_anonymized';
+
     /**
      * Get the Turkish display label.
      */
@@ -99,6 +109,14 @@ enum AuditEvent: string
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',
             self::ParameterChanged => 'Yasal parametre değişti',
+            self::PolicyPublished => 'KVKK metni yayımlandı',
+            self::ConsentGiven => 'KVKK metni onaylandı',
+            self::ConsentRefused => 'Açık rıza reddedildi',
+            self::ConsentRevoked => 'Açık rıza geri alındı',
+            self::KvkkRequestCreated => 'KVKK başvurusu yapıldı',
+            self::KvkkRequestUpdated => 'KVKK başvurusu güncellendi',
+            self::PersonalDataExported => 'Kişisel veri dökümü alındı',
+            self::UserAnonymized => 'Kullanıcı anonimleştirildi',
         };
     }
 
@@ -125,6 +143,7 @@ enum AuditEvent: string
             'workplace' => 'İşyeri',
             'import' => 'Aktarım',
             'system' => 'Sistem',
+            'kvkk' => 'KVKK',
         ];
     }
 
@@ -137,7 +156,8 @@ enum AuditEvent: string
             self::LoginFailed, self::Lockout, self::IpBlocked => 'red',
             self::CredentialRevealed, self::SettingsChanged, self::SessionTerminated, self::IdleLogout,
             self::UserDeactivated, self::FirmDeactivated, self::FirmRejected, self::AccessRevoked,
-            self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset => 'amber',
+            self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset, self::ConsentRevoked,
+            self::PersonalDataExported, self::UserAnonymized => 'amber',
             self::Login, self::Logout => 'zinc',
             default => 'sky',
         };

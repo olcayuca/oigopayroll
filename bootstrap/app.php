@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnforcePortal;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\RequirePolicyConsent;
 use App\Http\Middleware\SecureAdminPortal;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             EnforcePortal::class,
             SecureAdminPortal::class,
+            RequirePolicyConsent::class,
         ]);
 
         // Stay on the portal the guest was trying to reach.

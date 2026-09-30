@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             LegalParameterSeeder::class,
             PayrollCodeSeeder::class,
             HolidaySeeder::class,
+            KvkkSeeder::class,
         ]);
 
         if (app()->isLocal() && ! User::where('email', 'admin@hrd.test')->exists()) {

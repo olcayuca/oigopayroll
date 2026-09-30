@@ -79,7 +79,12 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Yasal parametreler: yürürlük tarihli; 2026 değerleri kaynaklarıyla yüklendi (admin doğrulamalı)
 - ✅ Bordro kodları: belge türleri (45), eksik gün nedenleri, işten çıkış kodları, teşvik kanunları (7 doğrulanmış kod); meslek kodları ve bankalar Excel ile yüklenir
 - ✅ Çalışma takvimi: sabit tatiller her yıl otomatik, dini bayramlar 2026–2027 yüklendi, yarım günler
-- ⬜ KVKK modülü
+- ✅ KVKK modülü (Admin → KVKK)
+  - Sürümlü aydınlatma / açık rıza metinleri (yer tutucu TASLAK — hukuki onayla yeni sürüm yayımlanmalı)
+  - Herkesten onay: iki portalda da giriş sonrası güncel sürüm için karar zorunlu; yeni sürüm herkese yeniden sorulur.
+    Aydınlatma "okudum" ile onaylanır; açık rıza isteğe bağlıdır (reddedilebilir, Ayarlar → KVKK'dan geri alınır). Kararlar IP/tarih ile saklanır.
+  - Sistem üzerinden başvuru (md. 11): Ayarlar → KVKK → Başvurularım; admin 30 gün süre takibi, yanıt, JSON veri dökümü, hesabı anonimleştirme
+  - ⬜ Çalışanlar: çalışan portalı gelince aynı onay akışına bağlanacak
 
 ### 2.5 Güvenlik
 - ✅ Olay kayıtları (audit log): giriş/çıkış, firma, yetki, kullanıcı, ayar, aktarım, şifre görüntüleme işlemleri

@@ -52,5 +52,14 @@
         >
             Güvenlik
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="finger-print"
+            :href="route('admin.kvkk.index')"
+            :current="request()->routeIs('admin.kvkk.*')"
+            :badge="\App\Models\KvkkRequest::whereIn('status', [\App\Enums\KvkkRequestStatus::Open, \App\Enums\KvkkRequestStatus::InProgress])->count() ?: null"
+            wire:navigate
+        >
+            KVKK
+        </flux:sidebar.item>
     </flux:sidebar.group>
 </flux:sidebar.nav>
