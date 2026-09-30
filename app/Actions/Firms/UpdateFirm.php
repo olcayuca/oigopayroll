@@ -18,7 +18,7 @@ class UpdateFirm
      */
     public function update(Firm $firm, array $input): Firm
     {
-        $firm->update(Validator::make($input, FirmRules::rules(), [], FirmRules::attributes())->validate());
+        $firm->update(Validator::make(FirmRules::clean($input), FirmRules::rules($firm), [], FirmRules::attributes())->validate());
 
         return $firm;
     }

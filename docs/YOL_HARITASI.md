@@ -16,6 +16,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - Yetki: kullanıcı + kapsam (firma/şirket/işyeri) + işlem; yetki şablonları opsiyonel
 - Risk Sınıfı: yönetilebilir seçim listesi
 - Excel şablonlarını sistem üretir
+- Firmalar arası yetki: bir firma (ör. muhasebe/holding) başka firmaları da yönetebilir; A'nın kullanıcıları, A'daki yetkileri ile bağlantıda izin verilen yetkilerin kesişimi kadar B'de işlem yapar. Bağlantıyı HRD veya B firmasının yetkilisi kurar/kaldırır.
 - Veritabanı MySQL, arayüz Flux + Livewire, dil Türkçe
 
 ---
@@ -45,6 +46,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Firma adını düzenleme
 - ✅ Pasife alma / yeniden aktifleştirme
 - ✅ Firma detayından müşteri kullanıcısı oluşturma / mevcut kullanıcıya yetki verme
+
+- ✅ Firma temel alanları: unvan, vergi no / dairesi, yetkili kişi, telefon, e-posta, adres
+- ⬜ Excel ile toplu firma oluşturma (şablon → yükle → önizleme → onay)
+- ⬜ Firmalar arası yetki: A firması B firmasını yönetir (HRD veya B'nin yetkilisi tanımlar)
 
 ### 2.2 Kullanıcılar
 - ✅ Liste (tip, durum, arama filtreleri)

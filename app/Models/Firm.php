@@ -24,6 +24,13 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property string $name
+ * @property string|null $title
+ * @property string|null $tax_number
+ * @property string|null $tax_office
+ * @property string|null $contact_name
+ * @property string|null $phone
+ * @property string|null $email
+ * @property string|null $address
  * @property FirmStatus $status
  * @property FirmSource $source
  * @property int|null $created_by
@@ -38,7 +45,10 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $creator
  * @property-read User|null $reviewer
  */
-#[Fillable(['name', 'status', 'source', 'created_by', 'reviewed_by', 'reviewed_at', 'rejection_reason'])]
+#[Fillable([
+    'name', 'title', 'tax_number', 'tax_office', 'contact_name', 'phone', 'email', 'address',
+    'status', 'source', 'created_by', 'reviewed_by', 'reviewed_at', 'rejection_reason',
+])]
 class Firm extends Model
 {
     /** @use HasFactory<FirmFactory> */

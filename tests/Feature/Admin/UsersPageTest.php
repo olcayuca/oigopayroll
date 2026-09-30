@@ -192,7 +192,7 @@ class UsersPageTest extends TestCase
             ->assertHasErrors('name');
 
         Livewire::test('pages::admin.firms.show', ['firm' => $firm])
-            ->set('name', 'Yeni Ad')->call('rename')
+            ->set('firmForm.name', 'Yeni Ad')->call('saveDetails')
             ->call('deactivate');
         $this->assertSame('Yeni Ad', $firm->refresh()->name);
         $this->assertSame('passive', $firm->status->value);

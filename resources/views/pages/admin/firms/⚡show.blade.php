@@ -6,6 +6,8 @@ use App\Actions\Firms\UpdateFirm;
 use App\Actions\Users\AddFirmUser;
 use App\Enums\FirmStatus;
 use App\Enums\ScopeType;
+use App\Livewire\Concerns\MapsValidationErrors;
+use App\Validation\FirmRules;
 use App\Models\AccessGrant;
 use App\Models\Company;
 use App\Models\Firm;
@@ -18,11 +20,14 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Firma Detayı')] class extends Component {
+    use MapsValidationErrors;
+
     public Firm $firm;
 
     public string $rejectionReason = '';
 
-    public string $name = '';
+    /** @var array<string, string> */
+    public array $firmForm = [];
 
     // Add user
     public string $userEmail = '';
@@ -44,7 +49,7 @@ new #[Title('Firma Detayı')] class extends Component {
         $this->authorize('view', $firm);
 
         $this->firm = $firm;
-        $this->name = $firm->name;
+        $this->fillFirmForm();
         $this->templateId = (string) (PermissionTemplate::where('name', 'Tam Yetki')->value('id') ?? '');
     }
 
@@ -97,14 +102,24 @@ new #[Title('Firma Detayı')] class extends Component {
         Flux::toast(variant: 'success', text: 'Firma reddedildi.');
     }
 
-    public function rename(UpdateFirm $updateFirm): void
+    public function saveDetails(UpdateFirm $updateFirm): void
     {
         $this->authorize('update', $this->firm);
 
-        $updateFirm->update($this->firm, ['name' => $this->name]);
+        if (! $this->mappingErrors('firmForm', FirmRules::FIELDS, fn () => $updateFirm->update($this->firm, $this->firmForm))) {
+            return;
+        }
 
+        $this->fillFirmForm();
         Flux::modal('edit-firm')->close();
         Flux::toast(variant: 'success', text: 'Firma güncellendi.');
+    }
+
+    private function fillFirmForm(): void
+    {
+        foreach (FirmRules::FIELDS as $field) {
+            $this->firmForm[$field] = (string) $this->firm->getAttribute($field);
+        }
     }
 
     public function deactivate(UpdateFirm $updateFirm): void
@@ -224,6 +239,16 @@ new #[Title('Firma Detayı')] class extends Component {
         <flux:text size="sm">Onaylayan: {{ $firm->reviewer?->name }}, {{ $firm->reviewed_at->format('d.m.Y H:i') }}</flux:text>
     @endif
 
+    <dl class="grid gap-x-8 gap-y-3 rounded-xl border border-zinc-200 p-6 sm:grid-cols-2 lg:grid-cols-4 dark:border-zinc-700">
+        @foreach (['title' => 'Unvan', 'tax_number' => 'Vergi No', 'tax_office' => 'Vergi Dairesi', 'contact_name' => 'Yetkili Kişi',
+                   'phone' => 'Telefon', 'email' => 'E-posta', 'address' => 'Adres'] as $field => $label)
+            <div @class(['lg:col-span-2' => $field === 'address'])>
+                <dt class="text-sm text-zinc-500">{{ $label }}</dt>
+                <dd class="mt-0.5">{{ $firm->{$field} ?: '—' }}</dd>
+            </div>
+        @endforeach
+    </dl>
+
     <section class="space-y-3">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">Firma Kullanıcıları</flux:heading>
@@ -329,10 +354,10 @@ new #[Title('Firma Detayı')] class extends Component {
         </form>
     </flux:modal>
 
-    <flux:modal name="edit-firm" class="md:w-[28rem]">
-        <form wire:submit="rename" class="space-y-6">
+    <flux:modal name="edit-firm" class="md:w-[40rem]">
+        <form wire:submit="saveDetails" class="space-y-6">
             <flux:heading size="lg">Firmayı Düzenle</flux:heading>
-            <flux:input wire:model="name" label="Firma Adı" required />
+            <x-firm-fields />
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">Vazgeç</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary">Kaydet</flux:button>

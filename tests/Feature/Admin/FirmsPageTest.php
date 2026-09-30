@@ -9,6 +9,7 @@ use App\Enums\Portal;
 use App\Models\Company;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\TurkishIdentifiers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -39,12 +40,46 @@ class FirmsPageTest extends TestCase
         $this->actingAs(User::factory()->superAdmin()->create());
 
         Livewire::test('pages::admin.firms.index')
-            ->set('name', 'Beta Holding')
+            ->set('firmForm.name', 'Beta Holding')
             ->call('createFirm')
             ->assertHasNoErrors()
             ->assertRedirect();
 
         $this->assertSame(FirmStatus::Active, Firm::where('name', 'Beta Holding')->value('status'));
+    }
+
+    public function test_firm_details_are_saved_and_tax_number_is_validated_and_unique(): void
+    {
+        $this->actingAs(User::factory()->superAdmin()->create());
+        Firm::factory()->create(['tax_number' => TurkishIdentifiers::makeVkn('111111111')]);
+
+        Livewire::test('pages::admin.firms.index')
+            ->set('firmForm', ['name' => 'Gama', 'tax_number' => '1234567891'])
+            ->call('createFirm')
+            ->assertHasErrors('firmForm.tax_number')
+            ->set('firmForm.tax_number', TurkishIdentifiers::makeVkn('111111111'))
+            ->call('createFirm')
+            ->assertHasErrors('firmForm.tax_number')
+            ->set('firmForm', [
+                'name' => 'Gama', 'title' => 'Gama Danışmanlık Ltd. Şti.', 'tax_number' => TurkishIdentifiers::makeVkn('222222222'),
+                'tax_office' => 'Beşiktaş', 'contact_name' => 'Ali Veli', 'phone' => '0212 000 00 00', 'email' => 'info@gama.com', 'address' => 'İstanbul',
+            ])
+            ->call('createFirm')
+            ->assertHasNoErrors();
+
+        $firm = Firm::where('name', 'Gama')->firstOrFail();
+        $this->assertSame('Ali Veli', $firm->contact_name);
+
+        Livewire::test('pages::admin.firms.show', ['firm' => $firm])
+            ->assertSet('firmForm.title', 'Gama Danışmanlık Ltd. Şti.')
+            ->set('firmForm.email', 'gecersiz')
+            ->call('saveDetails')
+            ->assertHasErrors('firmForm.email')
+            ->set('firmForm.email', 'yeni@gama.com')
+            ->call('saveDetails')
+            ->assertHasNoErrors();
+
+        $this->assertSame('yeni@gama.com', $firm->refresh()->email);
     }
 
     public function test_firm_name_is_required(): void
@@ -53,7 +88,7 @@ class FirmsPageTest extends TestCase
 
         Livewire::test('pages::admin.firms.index')
             ->call('createFirm')
-            ->assertHasErrors(['name' => 'required']);
+            ->assertHasErrors(['firmForm.name']);
     }
 
     public function test_pending_firm_can_be_approved_or_rejected_with_reason(): void
@@ -115,7 +150,7 @@ class FirmsPageTest extends TestCase
         $this->get(route('admin.firms.show', $other))->assertRedirect('/login');
 
         $this->actingAs($specialist);
-        Livewire::test('pages::admin.firms.index')->set('name', 'X')->call('createFirm')->assertForbidden();
+        Livewire::test('pages::admin.firms.index')->set('firmForm.name', 'X')->call('createFirm')->assertForbidden();
     }
 
     public function test_firm_detail_lists_companies_and_flags_missing_workplaces(): void

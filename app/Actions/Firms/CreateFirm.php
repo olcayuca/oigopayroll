@@ -20,7 +20,7 @@ class CreateFirm
      */
     public function handle(User $admin, array $input, bool $activate = true): Firm
     {
-        $data = Validator::make($input, FirmRules::rules(), [], FirmRules::attributes())->validate();
+        $data = Validator::make(FirmRules::clean($input), FirmRules::rules(), [], FirmRules::attributes())->validate();
 
         return Firm::create([
             ...$data,

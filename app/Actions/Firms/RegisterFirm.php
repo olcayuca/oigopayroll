@@ -27,7 +27,7 @@ class RegisterFirm
      */
     public function handle(User $user, array $input): Firm
     {
-        $data = Validator::make($input, FirmRules::rules(), [], FirmRules::attributes())->validate();
+        $data = Validator::make(FirmRules::clean($input), FirmRules::rules(), [], FirmRules::attributes())->validate();
 
         return DB::transaction(function () use ($user, $data) {
             $firm = Firm::create([

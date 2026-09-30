@@ -23,7 +23,7 @@ class PanelDashboardTest extends TestCase
         $this->actingAs($client)->get(route('dashboard'))->assertOk()->assertSee('Firmanızı oluşturun');
 
         Livewire::test('pages::panel.dashboard')
-            ->set('firmName', 'Acme Gıda')
+            ->set('firmForm.name', 'Acme Gıda')
             ->call('registerFirm')
             ->assertHasNoErrors()
             ->assertSee('Firmanız onay bekliyor');
@@ -40,7 +40,7 @@ class PanelDashboardTest extends TestCase
 
         Livewire::test('pages::panel.dashboard')
             ->assertSee('Yetkili olduğunuz firma yok')
-            ->set('firmName', 'X')
+            ->set('firmForm.name', 'X')
             ->call('registerFirm')
             ->assertForbidden();
     }

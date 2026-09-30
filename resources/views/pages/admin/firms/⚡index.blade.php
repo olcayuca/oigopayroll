@@ -3,7 +3,9 @@
 use App\Actions\Firms\CreateFirm;
 use App\Actions\Firms\ReviewFirm;
 use App\Enums\FirmStatus;
+use App\Livewire\Concerns\MapsValidationErrors;
 use App\Models\Firm;
+use App\Validation\FirmRules;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +16,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Title('Firmalar')] class extends Component {
-    use WithPagination;
+    use MapsValidationErrors, WithPagination;
 
     #[Url(except: '')]
     public string $search = '';
@@ -22,7 +24,8 @@ new #[Title('Firmalar')] class extends Component {
     #[Url(except: '')]
     public string $status = '';
 
-    public string $name = '';
+    /** @var array<string, string> */
+    public array $firmForm = [];
 
     public ?int $rejectingId = null;
 
@@ -52,7 +55,10 @@ new #[Title('Firmalar')] class extends Component {
         return Firm::visibleTo(Auth::user())
             ->with('creator')
             ->withCount(['companies', 'workplaces'])
-            ->when($this->search !== '', fn ($query) => $query->where('name', 'like', '%'.$this->search.'%'))
+            ->when($this->search !== '', fn ($query) => $query->where(fn ($query) => $query
+                ->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('title', 'like', '%'.$this->search.'%')
+                ->orWhere('tax_number', 'like', '%'.$this->search.'%')))
             ->when(FirmStatus::tryFrom($this->status), fn ($query, $status) => $query->where('status', $status))
             ->orderByRaw('status = ? desc', [FirmStatus::Pending->value])
             ->latest()
@@ -78,9 +84,13 @@ new #[Title('Firmalar')] class extends Component {
     {
         $this->authorize('create', Firm::class);
 
-        $firm = $createFirm->handle(Auth::user(), ['name' => $this->name]);
+        $firm = $this->mappingErrors('firmForm', FirmRules::FIELDS, fn () => $createFirm->handle(Auth::user(), $this->firmForm));
 
-        $this->reset('name');
+        if (! $firm) {
+            return;
+        }
+
+        $this->reset('firmForm');
         Flux::modal('create-firm')->close();
         Flux::toast(variant: 'success', text: "\"{$firm->name}\" oluşturuldu ve aktif edildi.");
 
@@ -208,14 +218,14 @@ new #[Title('Firmalar')] class extends Component {
     </flux:table>
 
     @can('create', \App\Models\Firm::class)
-    <flux:modal name="create-firm" class="md:w-[28rem]">
+    <flux:modal name="create-firm" class="md:w-[40rem]">
         <form wire:submit="createFirm" class="space-y-6">
             <div>
                 <flux:heading size="lg">Yeni Firma</flux:heading>
                 <flux:text class="mt-1">HRD tarafından oluşturulan firmalar onay beklemeden aktif olur. Müşteri kullanıcıları daha sonra eklenebilir.</flux:text>
             </div>
 
-            <flux:input wire:model="name" label="Firma Adı" required autofocus />
+            <x-firm-fields />
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>

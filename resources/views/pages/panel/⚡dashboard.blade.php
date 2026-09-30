@@ -2,6 +2,8 @@
 
 use App\Actions\Firms\RegisterFirm;
 use App\Enums\FirmStatus;
+use App\Livewire\Concerns\MapsValidationErrors;
+use App\Validation\FirmRules;
 use App\Models\Company;
 use App\Models\Firm;
 use App\Models\Workplace;
@@ -12,7 +14,10 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Gösterge Paneli')] class extends Component {
-    public string $firmName = '';
+    use MapsValidationErrors;
+
+    /** @var array<string, string> */
+    public array $firmForm = [];
 
     #[Computed]
     public function firm(): ?Firm
@@ -43,10 +48,15 @@ new #[Title('Gösterge Paneli')] class extends Component {
     {
         $this->authorize('register', Firm::class);
 
-        $firm = $registerFirm->handle(Auth::user(), ['name' => $this->firmName]);
+        $firm = $this->mappingErrors('firmForm', FirmRules::FIELDS, fn () => $registerFirm->handle(Auth::user(), $this->firmForm));
+
+        if (! $firm) {
+            return;
+        }
+
         Auth::user()->switchFirm($firm);
 
-        $this->reset('firmName');
+        $this->reset('firmForm');
         unset($this->firm);
 
         Flux::toast(variant: 'success', text: 'Firmanız oluşturuldu ve HRD onayına gönderildi.');
@@ -64,19 +74,18 @@ new #[Title('Gösterge Paneli')] class extends Component {
 
     @if (! $this->firm)
         @can('register', \App\Models\Firm::class)
-            <div class="max-w-xl rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+            <div class="max-w-2xl rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
                 <flux:heading size="lg">Firmanızı oluşturun</flux:heading>
                 <flux:text class="mt-1">
                     Firmanız HRD tarafından onaylandıktan sonra şirket ve işyeri bilgilerinizi girmeye başlayabilirsiniz.
                 </flux:text>
 
-                <form wire:submit="registerFirm" class="mt-6 flex items-end gap-3">
-                    <div class="flex-1">
-                        <flux:input wire:model="firmName" label="Firma Adı" required />
+                <form wire:submit="registerFirm" class="mt-6 space-y-4">
+                    <x-firm-fields />
+                    <div class="flex justify-end">
+                        <flux:button type="submit" variant="primary">Firmayı Oluştur</flux:button>
                     </div>
-                    <flux:button type="submit" variant="primary">Oluştur</flux:button>
                 </form>
-                @error('name') <flux:text class="mt-2 text-red-500">{{ $message }}</flux:text> @enderror
             </div>
         @else
             <flux:callout icon="information-circle" heading="Yetkili olduğunuz firma yok"
