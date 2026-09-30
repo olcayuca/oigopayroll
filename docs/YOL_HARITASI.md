@@ -1,7 +1,7 @@
 # HRD Bordro – Yol Haritası
 
 Kaynak: *HRD Bordro Sistemi 1. AŞAMA FİRMA İŞYERİ BİLGİLERİ.docx* + görüşmede alınan kararlar.
-Durum: ✅ bitti · 🔄 devam ediyor · ⬜ yapılacak · ❓ karar bekliyor
+Durum: ✅ bitti · 🔄 devam ediyor · ⬜ yapılacak · ⏸ ertelendi · ❓ karar bekliyor
 
 Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4) Bordro hesaplamaları**
 
@@ -32,8 +32,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Üç alan adlı portal yapısı, https zorunluluğu, Türkçe arayüz
 - ✅ Panelde aktif firma seçimi
 - ✅ Git deposu (github.com/olcayuca/oigopayroll)
-- ⬜ İlçe listesi (81 il için ~973 ilçe) — ❓ resmi kaynaktan indirme izni bekleniyor
-- ⬜ E-posta gönderimi (şifre sıfırlama, davet, onay/red bildirimi) — şu an `log` sürücüsü
+- ✅ İlçe listesi: 973 ilçe, resmi ilçe kodlarıyla (iki bağımsız kaynakla doğrulandı)
+- ⏸ E-posta gönderimi (şifre sıfırlama, davet, onay/red bildirimi) — SMTP bilgileri sonra; şu an `log` sürücüsü
 
 ## 2. Admin (admin.siteadi.com)
 
@@ -83,7 +83,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ⬜ Müşteri, kendi firmasına kullanıcı ekler ve yetkilendirir (firma kullanıcı yönetimi yetkisiyle)
 
 ### 3.4 Çalışan Portalı (Word: 1. Aşama – Çalışan)
-- ❓ Alan adı kararı (ör. `calisan.siteadi.com` veya panel içinde)
+- ✅ Karar: ayrı alan adı yok, çalışanlar panel.siteadi.com üzerinden giriş yapar (yalnızca kendi bilgileri)
 - ⬜ Çalışan modeli, girişi; kendi bilgileri ve bordrolarını görüntüleme/indirme
   (bordro verisi hesaplama aşamasına bağlı)
 

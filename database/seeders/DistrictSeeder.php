@@ -6,9 +6,11 @@ use App\Models\District;
 use Illuminate\Database\Seeder;
 
 /**
- * Loads ilçeler from database/data/districts.json: {"<plaka kodu>": ["İlçe", ...], ...}.
+ * Loads the 973 ilçeler from database/data/districts.json:
+ * {"<plaka kodu>": [{"code": <resmi ilçe kodu>, "name": "İlçe"}, ...], ...}
  *
- * Skipped when the file is missing; workplaces can still store a manually typed ilçe.
+ * Source: github.com/snrylmz/il-ilce-json, cross-checked against
+ * github.com/volkansenturk/turkiye-iller-ilceler (identical 973 codes).
  */
 class DistrictSeeder extends Seeder
 {
@@ -17,20 +19,15 @@ class DistrictSeeder extends Seeder
      */
     public function run(): void
     {
-        $path = database_path('data/districts.json');
+        /** @var array<string, list<array{code: int, name: string}>> $districts */
+        $districts = json_decode((string) file_get_contents(database_path('data/districts.json')), true, flags: JSON_THROW_ON_ERROR);
 
-        if (! is_file($path)) {
-            $this->command->warn('database/data/districts.json bulunamadı; ilçe listesi yüklenmedi.');
-
-            return;
-        }
-
-        /** @var array<string, list<string>> $districts */
-        $districts = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
-
-        foreach ($districts as $provinceId => $names) {
-            foreach ($names as $name) {
-                District::firstOrCreate(['province_id' => (int) $provinceId, 'name' => $name]);
+        foreach ($districts as $provinceId => $items) {
+            foreach ($items as $item) {
+                District::updateOrCreate(
+                    ['province_id' => (int) $provinceId, 'name' => $item['name']],
+                    ['code' => $item['code']],
+                );
             }
         }
     }

@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $province_id
+ * @property int|null $code
  * @property string $name
  * @property-read Province $province
  */
-#[Fillable(['province_id', 'name'])]
+#[Fillable(['province_id', 'code', 'name'])]
 class District extends Model
 {
     public $timestamps = false;
