@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\AuditEvent;
+use App\Support\Audit;
 use App\Enums\Portal;
 use App\Support\LandingContent;
 use Flux\Flux;
@@ -59,6 +61,7 @@ new #[Title('Web Sitesi')] class extends Component {
         }
 
         LandingContent::save($data['content']);
+        Audit::log(AuditEvent::WebsiteChanged, 'Web sitesi içeriği güncellendi');
 
         Flux::toast(variant: 'success', text: 'Web sitesi içeriği kaydedildi.');
     }

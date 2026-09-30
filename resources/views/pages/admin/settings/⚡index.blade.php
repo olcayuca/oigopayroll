@@ -1,24 +1,21 @@
 <?php
 
+use App\Enums\AuditEvent;
+use App\Support\Audit;
 use App\Models\Company;
-use App\Models\CredentialAccessLog;
 use App\Models\RiskClass;
 use App\Models\Sector;
 use App\Models\Setting;
 use App\Models\Workplace;
 use Flux\Flux;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 new #[Title('Sistem Ayarları')] class extends Component {
-    use WithPagination;
-
     /**
      * Editable reference lists: key => [model, label, usage model, usage column].
      */
@@ -64,7 +61,6 @@ new #[Title('Sistem Ayarları')] class extends Component {
     {
         $this->reset('newItem', 'editingItemId', 'editingItemName');
         $this->resetValidation();
-        $this->resetPage();
     }
 
     /**
@@ -103,6 +99,7 @@ new #[Title('Sistem Ayarları')] class extends Component {
         }
 
         Setting::putMany($values);
+        Audit::log(AuditEvent::SystemSettingsChanged, 'Genel ayarlar güncellendi', null, ['keys' => array_keys($values)]);
 
         Flux::toast(variant: 'success', text: 'Genel ayarlar kaydedildi.');
     }
@@ -140,6 +137,7 @@ new #[Title('Sistem Ayarları')] class extends Component {
         );
 
         $model::create(['name' => trim($this->newItem), 'is_active' => true]);
+        Audit::log(AuditEvent::SystemSettingsChanged, "{$label} eklendi: ".trim($this->newItem));
 
         $this->reset('newItem');
         unset($this->items);
@@ -165,6 +163,7 @@ new #[Title('Sistem Ayarları')] class extends Component {
         );
 
         $model::findOrFail($this->editingItemId)->update(['name' => trim($this->editingItemName)]);
+        Audit::log(AuditEvent::SystemSettingsChanged, "{$label} adı değişti: ".trim($this->editingItemName));
 
         $this->reset('editingItemId', 'editingItemName');
         unset($this->items);
@@ -177,6 +176,7 @@ new #[Title('Sistem Ayarları')] class extends Component {
 
         $item = $model::findOrFail($id);
         $item->update(['is_active' => ! $item->is_active]);
+        Audit::log(AuditEvent::SystemSettingsChanged, $item->name.($item->is_active ? ' aktifleştirildi' : ' pasife alındı'));
 
         unset($this->items);
     }
@@ -192,23 +192,14 @@ new #[Title('Sistem Ayarları')] class extends Component {
             return;
         }
 
-        $model::findOrFail($id)->delete();
+        $deleted = $model::findOrFail($id);
+        $deleted->delete();
+        Audit::log(AuditEvent::SystemSettingsChanged, "{$label} silindi: {$deleted->name}");
 
         unset($this->items);
         Flux::toast(variant: 'success', text: "{$label} silindi.");
     }
 
-    /**
-     * @return LengthAwarePaginator<int, CredentialAccessLog>
-     */
-    #[Computed]
-    public function credentialLogs(): LengthAwarePaginator
-    {
-        return CredentialAccessLog::query()
-            ->with(['user', 'workplace.company'])
-            ->latest('created_at')
-            ->paginate(25);
-    }
 
     private function field(string $key): string
     {
@@ -219,11 +210,11 @@ new #[Title('Sistem Ayarları')] class extends Component {
 <div class="flex w-full flex-1 flex-col gap-6">
     <div>
         <flux:heading size="xl">Sistem Ayarları</flux:heading>
-        <flux:text class="mt-1">Genel bilgiler, seçim listeleri ve güvenlik kayıtları.</flux:text>
+        <flux:text class="mt-1">Genel bilgiler ve seçim listeleri. Güvenlik kayıtları Güvenlik sayfasındadır.</flux:text>
     </div>
 
     <x-tabs :active="$tab"
-        :tabs="['genel' => 'Genel', 'sectors' => 'Sektörler', 'risk-classes' => 'Risk Sınıfları', 'logs' => 'Şifre Erişim Kayıtları']"
+        :tabs="['genel' => 'Genel', 'sectors' => 'Sektörler', 'risk-classes' => 'Risk Sınıfları']"
         :invalid="$errors->hasAny(array_map(fn ($f) => 'general.'.$f, array_keys($this->generalFields))) ? ['genel'] : []" />
 
     @if ($tab === 'genel')
@@ -288,33 +279,5 @@ new #[Title('Sistem Ayarları')] class extends Component {
             </flux:table>
             <flux:text size="sm">Pasif kayıtlar yeni seçimlerde listelenmez; mevcut kayıtlardaki değer korunur.</flux:text>
         </div>
-    @else
-        <flux:table :paginate="$this->credentialLogs">
-            <flux:table.columns>
-                <flux:table.column>Tarih</flux:table.column>
-                <flux:table.column>Kullanıcı</flux:table.column>
-                <flux:table.column>İşyeri</flux:table.column>
-                <flux:table.column>Görüntülenen alan</flux:table.column>
-                <flux:table.column>IP</flux:table.column>
-            </flux:table.columns>
-            <flux:table.rows>
-                @forelse ($this->credentialLogs as $log)
-                    <flux:table.row :key="$log->id">
-                        <flux:table.cell class="whitespace-nowrap">{{ $log->created_at->format('d.m.Y H:i:s') }}</flux:table.cell>
-                        <flux:table.cell>{{ $log->user?->name ?? '(silinmiş)' }}</flux:table.cell>
-                        <flux:table.cell>
-                            {{ $log->workplace->branch_name }}
-                            <div class="text-xs text-zinc-500">{{ $log->workplace->company->title }}</div>
-                        </flux:table.cell>
-                        <flux:table.cell>{{ \App\Validation\WorkplaceRules::attributes()[$log->field] ?? $log->field }}</flux:table.cell>
-                        <flux:table.cell>{{ $log->ip_address }}</flux:table.cell>
-                    </flux:table.row>
-                @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="5" class="py-8 text-center text-zinc-500">Henüz şifre görüntüleme kaydı yok.</flux:table.cell>
-                    </flux:table.row>
-                @endforelse
-            </flux:table.rows>
-        </flux:table>
     @endif
 </div>

@@ -2,8 +2,10 @@
 
 namespace App\Actions\Users;
 
+use App\Enums\AuditEvent;
 use App\Enums\UserType;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -32,6 +34,8 @@ class ManageUser
         $user = new User(['name' => $data['name'], 'email' => mb_strtolower($data['email']), 'password' => $password]);
         $user->forceFill(['type' => $data['type'], 'is_active' => true, 'email_verified_at' => now()])->save();
 
+        Audit::log(AuditEvent::UserCreated, "Kullanıcı oluşturuldu: {$user->email} ({$user->type->label()})", $user);
+
         return ['user' => $user, 'password' => $password];
     }
 
@@ -53,6 +57,10 @@ class ManageUser
         $user->fill(['name' => $data['name'], 'email' => mb_strtolower($data['email'])]);
         $user->forceFill(['type' => $data['type']])->save();
 
+        if ($user->wasChanged()) {
+            Audit::log(AuditEvent::UserUpdated, "Kullanıcı güncellendi: {$user->email}", $user, ['fields' => array_keys($user->getChanges())]);
+        }
+
         return $user;
     }
 
@@ -63,6 +71,8 @@ class ManageUser
         }
 
         $user->forceFill(['is_active' => $active])->save();
+
+        Audit::log($active ? AuditEvent::UserActivated : AuditEvent::UserDeactivated, ($active ? 'Hesap aktifleştirildi: ' : 'Hesap pasife alındı: ').$user->email, $user);
 
         return $user;
     }
@@ -75,6 +85,8 @@ class ManageUser
         $password = self::temporaryPassword();
 
         $user->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
+
+        Audit::log(AuditEvent::UserPasswordReset, "Geçici şifre oluşturuldu: {$user->email}", $user);
 
         return $password;
     }

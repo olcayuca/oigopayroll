@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\EnforcePortal;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\SecureAdminPortal;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,8 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [
             ForceHttps::class,
+            SecurityHeaders::class,
         ], append: [
             EnforcePortal::class,
+            SecureAdminPortal::class,
         ]);
 
         // Stay on the portal the guest was trying to reach.

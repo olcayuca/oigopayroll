@@ -3,11 +3,13 @@
 namespace App\Actions\Firms;
 
 use App\Actions\Access\GrantAccess;
+use App\Enums\AuditEvent;
 use App\Enums\FirmSource;
 use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -38,6 +40,8 @@ class RegisterFirm
             ]);
 
             $this->grantAccess->handle($user, $firm, Permission::firmOwnerDefaults());
+
+            Audit::log(AuditEvent::FirmCreated, "Firma başvurusu yapıldı: {$firm->name}", $firm);
 
             return $firm;
         });

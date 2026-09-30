@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\AuditEvent;
+use App\Support\Audit;
 use App\Enums\Permission;
 use App\Models\AccessGrant;
 use App\Models\PermissionTemplate;
@@ -87,6 +89,7 @@ new #[Title('Yetki Şablonları')] class extends Component {
         ], [], ['name' => 'Şablon adı', 'description' => 'Açıklama', 'permissions' => 'Yetkiler']);
 
         $template->fill($data)->save();
+        Audit::log(AuditEvent::TemplateChanged, "Yetki şablonu kaydedildi: {$template->name}", $template, ['permissions' => $template->permissions]);
 
         unset($this->templates);
         Flux::modal('template')->close();
@@ -100,6 +103,7 @@ new #[Title('Yetki Şablonları')] class extends Component {
 
         // Grants keep their individually selected permissions; the template part is dropped.
         $template->delete();
+        Audit::log(AuditEvent::TemplateChanged, "Yetki şablonu silindi: {$template->name}");
 
         unset($this->templates, $this->usage);
         Flux::toast(variant: 'success', text: 'Şablon silindi.');

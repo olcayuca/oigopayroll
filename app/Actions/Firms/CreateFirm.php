@@ -2,10 +2,12 @@
 
 namespace App\Actions\Firms;
 
+use App\Enums\AuditEvent;
 use App\Enums\FirmSource;
 use App\Enums\FirmStatus;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,7 +24,7 @@ class CreateFirm
     {
         $data = Validator::make(FirmRules::clean($input), FirmRules::rules(), [], FirmRules::attributes())->validate();
 
-        return Firm::create([
+        $firm = Firm::create([
             ...$data,
             'status' => $activate ? FirmStatus::Active : FirmStatus::Pending,
             'source' => FirmSource::Hrd,
@@ -30,5 +32,9 @@ class CreateFirm
             'reviewed_by' => $activate ? $admin->id : null,
             'reviewed_at' => $activate ? now() : null,
         ]);
+
+        Audit::log(AuditEvent::FirmCreated, "Firma oluşturuldu (HRD): {$firm->name}", $firm);
+
+        return $firm;
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Actions\Companies;
 
+use App\Enums\AuditEvent;
 use App\Models\Company;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\Audit;
 use App\Validation\CompanyRules;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +29,10 @@ class SaveCompany
 
         $data = $this->validate($input);
 
-        return $firm->companies()->create([...$data, 'created_by' => $user?->id]);
+        $company = $firm->companies()->create([...$data, 'created_by' => $user?->id]);
+        Audit::log(AuditEvent::CompanyCreated, "Şirket oluşturuldu: {$company->company_no} {$company->title}", $company);
+
+        return $company;
     }
 
     /**
@@ -36,6 +41,10 @@ class SaveCompany
     public function update(Company $company, array $input): Company
     {
         $company->update($this->validate($input, $company));
+
+        if ($company->wasChanged()) {
+            Audit::log(AuditEvent::CompanyUpdated, "Şirket güncellendi: {$company->company_no} {$company->title}", $company, ['fields' => array_keys($company->getChanges())]);
+        }
 
         return $company;
     }
@@ -50,6 +59,7 @@ class SaveCompany
         }
 
         $company->delete();
+        Audit::log(AuditEvent::CompanyDeleted, "Şirket silindi: {$company->company_no} {$company->title}", $company);
     }
 
     /**

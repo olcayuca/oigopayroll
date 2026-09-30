@@ -2,9 +2,11 @@
 
 namespace App\Actions\Firms;
 
+use App\Enums\AuditEvent;
 use App\Enums\FirmStatus;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -23,6 +25,8 @@ class ReviewFirm
             'rejection_reason' => null,
         ]);
 
+        Audit::log(AuditEvent::FirmApproved, "Firma onaylandı: {$firm->name}", $firm);
+
         return $firm;
     }
 
@@ -40,6 +44,8 @@ class ReviewFirm
             'reviewed_at' => now(),
             'rejection_reason' => $reason,
         ]);
+
+        Audit::log(AuditEvent::FirmRejected, "Firma reddedildi: {$firm->name}", $firm, ['reason' => $reason]);
 
         return $firm;
     }

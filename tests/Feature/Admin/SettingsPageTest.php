@@ -2,14 +2,12 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Actions\Workplaces\RevealWorkplaceCredential;
 use App\Enums\Portal;
 use App\Models\Company;
 use App\Models\RiskClass;
 use App\Models\Sector;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\Workplace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -28,7 +26,7 @@ class SettingsPageTest extends TestCase
 
     public function test_page_renders_each_tab(): void
     {
-        foreach (['genel', 'sectors', 'risk-classes', 'logs'] as $tab) {
+        foreach (['genel', 'sectors', 'risk-classes'] as $tab) {
             $this->get(route('admin.settings.index', ['sekme' => $tab]))->assertOk();
         }
     }
@@ -83,17 +81,6 @@ class SettingsPageTest extends TestCase
 
         $this->assertModelExists($used);
         $this->assertModelMissing($unused);
-    }
-
-    public function test_credential_access_log_is_listed(): void
-    {
-        $workplace = Workplace::factory()->create(['branch_name' => 'Kadıköy Şube']);
-        app(RevealWorkplaceCredential::class)->handle($workplace, 'sgk_system_password', User::factory()->superAdmin()->create(['name' => 'Bakan Admin']));
-
-        $this->get(route('admin.settings.index', ['sekme' => 'logs']))
-            ->assertSee('Bakan Admin')
-            ->assertSee('Kadıköy Şube')
-            ->assertSee('SGK Sistem Şifresi');
     }
 
     public function test_non_admins_cannot_manage_settings(): void

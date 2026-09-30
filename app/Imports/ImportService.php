@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Actions\Companies\SaveCompany;
 use App\Actions\Firms\CreateFirm;
 use App\Actions\Workplaces\SaveWorkplace;
+use App\Enums\AuditEvent;
 use App\Enums\ImportStatus;
 use App\Enums\ImportType;
 use App\Models\Company;
@@ -13,6 +14,7 @@ use App\Models\DataImportRow;
 use App\Models\Firm;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\Audit;
 use App\Validation\CompanyRules;
 use App\Validation\FirmRules;
 use App\Validation\WorkplaceInput;
@@ -138,6 +140,8 @@ class ImportService
                 'import' => 'Veriler önizlemeden sonra değişti; '.count($failures).' satır artık geçersiz. Hiçbir kayıt oluşturulmadı.',
             ]);
         }
+
+        Audit::log(AuditEvent::ImportCompleted, "Excel aktarımı: {$import->total_rows} {$import->type->label()} ({$import->original_filename})", $import->firm, ['import_id' => $import->id, 'type' => $import->type->value, 'rows' => $import->total_rows], $user);
 
         return $import->refresh();
     }

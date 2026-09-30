@@ -2,8 +2,10 @@
 
 namespace App\Actions\Firms;
 
+use App\Enums\AuditEvent;
 use App\Enums\FirmStatus;
 use App\Models\Firm;
+use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +22,10 @@ class UpdateFirm
     {
         $firm->update(Validator::make(FirmRules::clean($input), FirmRules::rules($firm), [], FirmRules::attributes())->validate());
 
+        if ($firm->wasChanged()) {
+            Audit::log(AuditEvent::FirmUpdated, "Firma bilgileri güncellendi: {$firm->name}", $firm, ['fields' => array_keys($firm->getChanges())]);
+        }
+
         return $firm;
     }
 
@@ -31,6 +37,7 @@ class UpdateFirm
         $this->ensureStatus($firm, FirmStatus::Active, 'Yalnızca aktif firmalar pasife alınabilir.');
 
         $firm->update(['status' => FirmStatus::Passive]);
+        Audit::log(AuditEvent::FirmDeactivated, "Firma pasife alındı: {$firm->name}", $firm);
 
         return $firm;
     }
@@ -40,6 +47,7 @@ class UpdateFirm
         $this->ensureStatus($firm, FirmStatus::Passive, 'Yalnızca pasif firmalar yeniden aktifleştirilebilir.');
 
         $firm->update(['status' => FirmStatus::Active]);
+        Audit::log(AuditEvent::FirmReactivated, "Firma aktifleştirildi: {$firm->name}", $firm);
 
         return $firm;
     }

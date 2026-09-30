@@ -4,6 +4,7 @@ namespace App\Actions\Firms;
 
 use App\Actions\Access\DelegatedGrantGuard;
 use App\Actions\Access\GrantAccess;
+use App\Enums\AuditEvent;
 use App\Enums\Permission;
 use App\Enums\ScopeType;
 use App\Models\AccessGrant;
@@ -13,6 +14,7 @@ use App\Models\FirmLink;
 use App\Models\PermissionTemplate;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\Audit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -61,10 +63,14 @@ class ManageFirmLink
             }
         }
 
-        return FirmLink::updateOrCreate(
+        $link = FirmLink::updateOrCreate(
             ['manager_firm_id' => $manager->id, 'managed_firm_id' => $managed->id],
             ['permissions' => $permissions, 'granted_by' => $actor->id],
         );
+
+        Audit::log(AuditEvent::FirmLinked, "{$manager->name} → {$managed->name} yönetim yetkisi", $managed, ['manager_firm_id' => $manager->id, 'permissions' => $permissions]);
+
+        return $link;
     }
 
     /**
@@ -77,8 +83,10 @@ class ManageFirmLink
         }
 
         DB::transaction(function () use ($link) {
-            $this->assignmentsQuery($link)->delete();
+            $removed = $this->assignmentsQuery($link)->delete();
             $link->delete();
+
+            Audit::log(AuditEvent::FirmUnlinked, "{$link->manager->name} → {$link->managed->name} yönetim yetkisi kaldırıldı", $link->managed, ['manager_firm_id' => $link->manager_firm_id, 'removed_assignments' => $removed]);
         });
     }
 
@@ -113,6 +121,8 @@ class ManageFirmLink
 
         $grant->delete();
         $grant->user->flushAccessCache();
+
+        Audit::log(AuditEvent::AccessRevoked, "{$grant->user->name} kullanıcısının {$link->managed->name} ataması kaldırıldı", $grant->user);
     }
 
     /**

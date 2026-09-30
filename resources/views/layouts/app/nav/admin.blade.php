@@ -31,5 +31,14 @@
         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
             Sistem Ayarları
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="shield-exclamation"
+            :href="route('admin.security.index')"
+            :current="request()->routeIs('admin.security.*')"
+            :badge="\App\Models\AuditLog::where('event', \App\Enums\AuditEvent::LoginFailed)->where('created_at', '>=', now()->subDay())->count() ?: null"
+            wire:navigate
+        >
+            Güvenlik
+        </flux:sidebar.item>
     </flux:sidebar.group>
 </flux:sidebar.nav>

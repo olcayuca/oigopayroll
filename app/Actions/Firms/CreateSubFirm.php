@@ -2,11 +2,13 @@
 
 namespace App\Actions\Firms;
 
+use App\Enums\AuditEvent;
 use App\Enums\FirmSource;
 use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Models\Firm;
 use App\Models\User;
+use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -61,6 +63,8 @@ class CreateSubFirm
                 $actor->flushAccessCache();
                 $this->manageFirmLink->assign($link, $actor, $firm, $permissions, null, $actor);
             }
+
+            Audit::log(AuditEvent::FirmCreated, "Alt firma oluşturuldu: {$firm->name} (üst: {$parent->name})", $firm, ['parent_firm_id' => $parent->id]);
 
             return $firm;
         });

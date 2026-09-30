@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\AuditEvent;
+use App\Support\Audit;
 use App\Actions\Access\GrantAccess;
 use App\Actions\Users\ManageUser;
 use App\Enums\ScopeType;
@@ -224,7 +226,10 @@ new #[Title('Kullanıcı')] class extends Component {
     {
         $this->authorize('update', $this->user);
 
-        $this->user->accessGrants()->whereKey($grantId)->delete();
+        $grant = $this->user->accessGrants()->findOrFail($grantId);
+        $label = $grant->scopeLabel();
+        $grant->delete();
+        Audit::log(AuditEvent::AccessRevoked, "{$this->user->name} kullanıcısının yetkisi kaldırıldı: {$label}", $this->user);
         $this->user->flushAccessCache();
 
         unset($this->grants);

@@ -2,10 +2,13 @@
 
 namespace App\Actions\Workplaces;
 
+use App\Enums\AuditEvent;
 use App\Enums\Permission;
 use App\Models\CredentialAccessLog;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\Audit;
+use App\Validation\WorkplaceRules;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
 
@@ -30,6 +33,8 @@ class RevealWorkplaceCredential
             'field' => $field,
             'ip_address' => $ipAddress,
         ]);
+
+        Audit::log(AuditEvent::CredentialRevealed, (WorkplaceRules::attributes()[$field] ?? $field)." görüntülendi: {$workplace->branch_name}", $workplace, ['field' => $field], $user);
 
         $value = $workplace->getAttribute($field);
 

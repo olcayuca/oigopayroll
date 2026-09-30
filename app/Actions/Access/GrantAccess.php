@@ -2,6 +2,7 @@
 
 namespace App\Actions\Access;
 
+use App\Enums\AuditEvent;
 use App\Enums\Permission;
 use App\Enums\ScopeType;
 use App\Models\AccessGrant;
@@ -10,6 +11,7 @@ use App\Models\Firm;
 use App\Models\PermissionTemplate;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\Audit;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -50,6 +52,12 @@ class GrantAccess
 
         $user->flushAccessCache();
 
+        Audit::log(AuditEvent::AccessGranted, "{$user->name}: {$grant->scopeLabel()} ({$grant->scope_type->label()})", $user, [
+            'scope_type' => $grant->scope_type->value,
+            'scope_id' => $grant->scope_id,
+            'permissions' => $grant->effectivePermissions(),
+        ]);
+
         return $grant;
     }
 
@@ -63,6 +71,11 @@ class GrantAccess
             ->where('scope_type', self::scopeType($scope))
             ->where('scope_id', $scope->getKey())
             ->delete();
+
+        Audit::log(AuditEvent::AccessRevoked, "{$user->name} kullanıcısının yetkisi kaldırıldı", $user, [
+            'scope_type' => self::scopeType($scope)->value,
+            'scope_id' => $scope->getKey(),
+        ]);
 
         $user->flushAccessCache();
     }

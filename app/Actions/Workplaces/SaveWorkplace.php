@@ -2,9 +2,11 @@
 
 namespace App\Actions\Workplaces;
 
+use App\Enums\AuditEvent;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\Audit;
 use App\Validation\WorkplaceInput;
 use App\Validation\WorkplaceRules;
 use Illuminate\Support\Facades\Validator;
@@ -28,7 +30,10 @@ class SaveWorkplace
 
         $data = $this->validate($input, $company);
 
-        return $company->workplaces()->create([...$data, 'created_by' => $user?->id]);
+        $workplace = $company->workplaces()->create([...$data, 'created_by' => $user?->id]);
+        Audit::log(AuditEvent::WorkplaceCreated, "İşyeri oluşturuldu: {$company->short_name} / {$workplace->branch_name}", $workplace);
+
+        return $workplace;
     }
 
     /**
@@ -46,6 +51,11 @@ class SaveWorkplace
 
         $workplace->update($this->validate($input, $workplace->company, $workplace));
 
+        if ($workplace->wasChanged()) {
+            // Field names only: credential values never reach the log.
+            Audit::log(AuditEvent::WorkplaceUpdated, "İşyeri güncellendi: {$workplace->branch_name}", $workplace, ['fields' => array_keys($workplace->getChanges())]);
+        }
+
         return $workplace;
     }
 
@@ -55,6 +65,7 @@ class SaveWorkplace
     public function delete(Workplace $workplace): void
     {
         $workplace->delete();
+        Audit::log(AuditEvent::WorkplaceDeleted, "İşyeri silindi: {$workplace->branch_name}", $workplace);
     }
 
     /**

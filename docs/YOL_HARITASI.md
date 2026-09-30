@@ -75,6 +75,13 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Genel ayarlar (site adı, iletişim bilgileri vb.)
 - ✅ İşyeri şifre görüntüleme logları
 
+### 2.5 Güvenlik
+- ✅ Olay kayıtları (audit log): giriş/çıkış, firma, yetki, kullanıcı, ayar, aktarım, şifre görüntüleme işlemleri
+- ✅ Başarısız giriş kayıtları (e-posta, IP, tarayıcı, sebep) ve kilitlenmeler
+- ✅ Aktif oturumlar ve oturum sonlandırma
+- ✅ Güvenlik ayarları: admin için 2FA zorunluluğu, IP kısıtı, hareketsizlikte çıkış, giriş deneme sınırı
+- ✅ Güvenlik başlıkları (clickjacking, MIME sniffing, referrer, HSTS)
+
 ## 3. Panel (panel.siteadi.com)
 
 ### 3.1 Şirketler (Word: 3. Aşama)

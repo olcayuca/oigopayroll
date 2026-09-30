@@ -10,7 +10,10 @@ use App\Http\Responses\PasskeyLoginResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Responses\VerifyEmailResponse;
+use App\Listeners\AuditAuthEvents;
 use App\Models\User;
+use App\Support\SecuritySettings;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -60,11 +63,22 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request): ?User {
             $user = User::where('email', Str::lower((string) $request->input(Fortify::username())))->first();
 
-            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+            // The reason is only recorded in the audit log; the user always sees the same generic message.
+            $reason = match (true) {
+                ! $user => 'unknown_user',
+                ! Hash::check((string) $request->input('password'), $user->password) => 'wrong_password',
+                ! $user->is_active => 'inactive',
+                ! Portal::fromHost($request->getHost())->admits($user) => 'wrong_portal',
+                default => null,
+            };
+
+            AuditAuthEvents::$pendingFailureReason = $reason;
+
+            if ($reason !== null) {
                 return null;
             }
 
-            return Portal::fromHost($request->getHost())->admits($user) ? $user : null;
+            return $user;
         });
     }
 
@@ -92,9 +106,25 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $email = Str::lower((string) $request->input(Fortify::username()));
+            $lockedOut = function (Request $request, array $headers) {
+                event(new Lockout($request));
 
-            return Limit::perMinute(5)->by($throttleKey);
+                return back()->withInput($request->only(Fortify::username()))->withErrors([
+                    Fortify::username() => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60]),
+                ]);
+            };
+
+            return [
+                // Per e-mail and IP, per minute.
+                Limit::perMinute(SecuritySettings::loginAttemptsPerMinute())
+                    ->by('ip:'.Str::transliterate($email.'|'.$request->ip()))
+                    ->response($lockedOut),
+                // Per account across all IPs, per hour (slows down distributed guessing).
+                Limit::perHour(SecuritySettings::loginAttemptsPerHour())
+                    ->by('account:'.Str::transliterate($email))
+                    ->response($lockedOut),
+            ];
         });
 
         RateLimiter::for('passkeys', function (Request $request) {
