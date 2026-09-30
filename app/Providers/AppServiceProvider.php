@@ -35,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
     protected function configureAuthorization(): void
     {
         Gate::before(fn (User $user): ?bool => $user->isSuperAdmin() ? true : null);
+
+        // System settings and website content: super admins only (via Gate::before).
+        Gate::define('manage-settings', fn (User $user): bool => false);
     }
 
     /**

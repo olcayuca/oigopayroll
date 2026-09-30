@@ -26,6 +26,9 @@ Route::domain(config('portals.admin'))
         Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
         Route::livewire('kullanicilar/{user}', 'pages::admin.users.show')->name('users.show');
         Route::livewire('yetki-sablonlari', 'pages::admin.permission-templates.index')->name('permission-templates.index');
+
+        Route::livewire('ayarlar', 'pages::admin.settings.index')->name('settings.index');
+        Route::livewire('web-sitesi', 'pages::admin.website.index')->name('website.index');
     });
 
 // panel.siteadi.com: client firms

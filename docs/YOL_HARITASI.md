@@ -56,14 +56,14 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Yetki şablonları yönetimi (oluştur / düzenle / sil)
 
 ### 2.3 Web Sitesi (landing içeriği)
-- ⬜ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir
-- ⬜ Landing sayfası tasarımı
+- ✅ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir
+- ✅ Landing sayfası tasarımı (hero, hizmetler, hakkımızda, iletişim, SEO)
 
 ### 2.4 Sistem Ayarları
-- ⬜ Sektör listesi yönetimi
-- ⬜ Risk sınıfı listesi yönetimi
-- ⬜ Genel ayarlar (site adı, iletişim bilgileri vb.)
-- ⬜ İşyeri şifre görüntüleme logları
+- ✅ Sektör listesi yönetimi
+- ✅ Risk sınıfı listesi yönetimi
+- ✅ Genel ayarlar (site adı, iletişim bilgileri vb.)
+- ✅ İşyeri şifre görüntüleme logları
 
 ## 3. Panel (panel.siteadi.com)
 

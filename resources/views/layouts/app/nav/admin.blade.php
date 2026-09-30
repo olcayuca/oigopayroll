@@ -25,7 +25,11 @@
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Sistem" class="grid">
-        <flux:sidebar.item icon="globe-alt" badge="Yakında">Web Sitesi</flux:sidebar.item>
-        <flux:sidebar.item icon="adjustments-horizontal" badge="Yakında">Sistem Ayarları</flux:sidebar.item>
+        <flux:sidebar.item icon="globe-alt" :href="route('admin.website.index')" :current="request()->routeIs('admin.website.*')" wire:navigate>
+            Web Sitesi
+        </flux:sidebar.item>
+        <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
+            Sistem Ayarları
+        </flux:sidebar.item>
     </flux:sidebar.group>
 </flux:sidebar.nav>
