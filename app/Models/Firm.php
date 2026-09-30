@@ -71,6 +71,26 @@ class Firm extends Model
     }
 
     /**
+     * Links through which other firms manage this firm.
+     *
+     * @return HasMany<FirmLink, $this>
+     */
+    public function managerLinks(): HasMany
+    {
+        return $this->hasMany(FirmLink::class, 'managed_firm_id');
+    }
+
+    /**
+     * Links through which this firm manages other firms.
+     *
+     * @return HasMany<FirmLink, $this>
+     */
+    public function managedLinks(): HasMany
+    {
+        return $this->hasMany(FirmLink::class, 'manager_firm_id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function creator(): BelongsTo

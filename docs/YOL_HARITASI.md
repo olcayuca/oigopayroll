@@ -49,7 +49,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 
 - ✅ Firma temel alanları: unvan, vergi no / dairesi, yetkili kişi, telefon, e-posta, adres
 - ✅ Excel ile toplu firma oluşturma (şablon → yükle → önizleme → onay)
-- ⬜ Firmalar arası yetki: A firması B firmasını yönetir (HRD veya B'nin yetkilisi tanımlar)
+- ✅ Firmalar arası yetki: A firması B firmasını yönetir (admin: iki yönde; panel: B'nin yetkilisi A'yı vergi no ile ekler)
 
 ### 2.2 Kullanıcılar
 - ✅ Liste (tip, durum, arama filtreleri)

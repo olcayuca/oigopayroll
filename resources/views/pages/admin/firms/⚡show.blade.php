@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Access\GrantAccess;
+use App\Actions\Firms\ManageFirmLink;
 use App\Actions\Firms\ReviewFirm;
 use App\Actions\Firms\UpdateFirm;
 use App\Actions\Users\AddFirmUser;
@@ -11,6 +12,7 @@ use App\Validation\FirmRules;
 use App\Models\AccessGrant;
 use App\Models\Company;
 use App\Models\Firm;
+use App\Models\FirmLink;
 use App\Models\PermissionTemplate;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,6 +40,13 @@ new #[Title('Firma Detayı')] class extends Component {
 
     /** @var list<string> */
     public array $permissions = [];
+
+    // Firm links
+    public ?int $editingLinkId = null;
+
+    public string $linkDirection = 'manager';
+
+    public string $linkFirmId = '';
 
     // One-time password display
     public ?string $createdEmail = null;
@@ -171,6 +180,89 @@ new #[Title('Firma Detayı')] class extends Component {
         }
     }
 
+    /**
+     * @return Collection<int, FirmLink>
+     */
+    #[Computed]
+    public function managerLinks(): Collection
+    {
+        return $this->firm->managerLinks()->with('manager')->get();
+    }
+
+    /**
+     * @return Collection<int, FirmLink>
+     */
+    #[Computed]
+    public function managedLinks(): Collection
+    {
+        return $this->firm->managedLinks()->with('managed')->get();
+    }
+
+    /**
+     * @return Collection<int, Firm>
+     */
+    #[Computed]
+    public function otherFirms(): Collection
+    {
+        return Firm::whereKeyNot($this->firm->id)->orderBy('name')->get(['id', 'name']);
+    }
+
+    public function newLink(string $direction): void
+    {
+        $this->reset('linkFirmId', 'templateId', 'permissions', 'editingLinkId');
+        $this->linkDirection = $direction === 'managed' ? 'managed' : 'manager';
+        $this->resetValidation();
+
+        Flux::modal('firm-link')->show();
+    }
+
+    public function editLink(int $linkId): void
+    {
+        $link = FirmLink::where(fn ($q) => $q->where('manager_firm_id', $this->firm->id)->orWhere('managed_firm_id', $this->firm->id))->findOrFail($linkId);
+
+        $this->editingLinkId = $link->id;
+        $this->linkDirection = $link->managed_firm_id === $this->firm->id ? 'manager' : 'managed';
+        $this->linkFirmId = (string) ($this->linkDirection === 'manager' ? $link->manager_firm_id : $link->managed_firm_id);
+        $this->templateId = '';
+        $this->permissions = $link->permissions;
+        $this->resetValidation();
+
+        Flux::modal('firm-link')->show();
+    }
+
+    public function saveLink(ManageFirmLink $manageFirmLink): void
+    {
+        $this->authorize('update', $this->firm);
+        $this->validate(['linkFirmId' => ['required', 'exists:firms,id']], [], ['linkFirmId' => 'Firma']);
+
+        $other = Firm::findOrFail($this->linkFirmId);
+        $template = $this->templateId !== '' ? PermissionTemplate::find($this->templateId) : null;
+        $permissions = [...$this->permissions, ...($template->permissions ?? [])];
+
+        [$manager, $managed] = $this->linkDirection === 'manager' ? [$other, $this->firm] : [$this->firm, $other];
+
+        $saved = $this->mappingErrors('link', [], fn () => $manageFirmLink->link($manager, $managed, $permissions, Auth::user()));
+
+        if (! $saved) {
+            return;
+        }
+
+        unset($this->managerLinks, $this->managedLinks);
+        Flux::modal('firm-link')->close();
+        Flux::toast(variant: 'success', text: "{$manager->name} → {$managed->name} erişimi kaydedildi.");
+    }
+
+    public function removeLink(int $linkId, ManageFirmLink $manageFirmLink): void
+    {
+        $this->authorize('update', $this->firm);
+
+        $link = FirmLink::where(fn ($q) => $q->where('manager_firm_id', $this->firm->id)->orWhere('managed_firm_id', $this->firm->id))->findOrFail($linkId);
+        $manageFirmLink->unlink($link, Auth::user());
+
+        unset($this->managerLinks, $this->managedLinks);
+        Flux::toast(variant: 'success', text: 'Firmalar arası erişim kaldırıldı.');
+    }
+
     public function removeUser(int $grantId, GrantAccess $grantAccess): void
     {
         $this->authorize('manageUsers', $this->firm);
@@ -299,6 +391,63 @@ new #[Title('Firma Detayı')] class extends Component {
     </section>
 
     <section class="space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+                <flux:heading size="lg">Firmalar Arası Yetki</flux:heading>
+                <flux:text size="sm">Yönetici firmanın kullanıcıları, kendi firmalarındaki yetkileri ile burada izin verilen yetkilerin kesişimi kadar işlem yapar.</flux:text>
+            </div>
+            @can('update', $firm)
+                <div class="flex gap-2">
+                    <flux:button size="sm" icon="arrow-down-left" wire:click="newLink('manager')">Yönetici Firma Ekle</flux:button>
+                    <flux:button size="sm" icon="arrow-up-right" wire:click="newLink('managed')">Yönetilecek Firma Ekle</flux:button>
+                </div>
+            @endcan
+        </div>
+
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Yön</flux:table.column>
+                <flux:table.column>Firma</flux:table.column>
+                <flux:table.column>İzin verilen yetkiler</flux:table.column>
+                <flux:table.column></flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @foreach ($this->managerLinks as $link)
+                    <flux:table.row :key="'in-'.$link->id">
+                        <flux:table.cell><flux:badge size="sm" color="sky" inset="top bottom">Bu firmayı yönetiyor</flux:badge></flux:table.cell>
+                        <flux:table.cell variant="strong"><a href="{{ route('admin.firms.show', $link->manager) }}" wire:navigate class="hover:underline">{{ $link->manager->name }}</a></flux:table.cell>
+                        <flux:table.cell class="max-w-md whitespace-normal text-xs text-zinc-500">{{ collect($link->permissions)->map(fn ($p) => \App\Enums\Permission::from($p)->label())->join(', ') }}</flux:table.cell>
+                        <flux:table.cell align="end" class="whitespace-nowrap">
+                            @can('update', $firm)
+                                <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="editLink({{ $link->id }})" />
+                                <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeLink({{ $link->id }})" wire:confirm="Erişim kaldırılsın mı?" />
+                            @endcan
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+                @foreach ($this->managedLinks as $link)
+                    <flux:table.row :key="'out-'.$link->id">
+                        <flux:table.cell><flux:badge size="sm" color="violet" inset="top bottom">Bu firmanın yönettiği</flux:badge></flux:table.cell>
+                        <flux:table.cell variant="strong"><a href="{{ route('admin.firms.show', $link->managed) }}" wire:navigate class="hover:underline">{{ $link->managed->name }}</a></flux:table.cell>
+                        <flux:table.cell class="max-w-md whitespace-normal text-xs text-zinc-500">{{ collect($link->permissions)->map(fn ($p) => \App\Enums\Permission::from($p)->label())->join(', ') }}</flux:table.cell>
+                        <flux:table.cell align="end" class="whitespace-nowrap">
+                            @can('update', $firm)
+                                <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="editLink({{ $link->id }})" />
+                                <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeLink({{ $link->id }})" wire:confirm="Erişim kaldırılsın mı?" />
+                            @endcan
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+                @if ($this->managerLinks->isEmpty() && $this->managedLinks->isEmpty())
+                    <flux:table.row>
+                        <flux:table.cell colspan="4" class="py-8 text-center text-zinc-500">Firmalar arası yetki tanımlı değil.</flux:table.cell>
+                    </flux:table.row>
+                @endif
+            </flux:table.rows>
+        </flux:table>
+    </section>
+
+    <section class="space-y-3">
         <flux:heading size="lg">Şirketler</flux:heading>
 
         <flux:table>
@@ -385,6 +534,36 @@ new #[Title('Firma Detayı')] class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">Vazgeç</flux:button></flux:modal.close>
                 <flux:button type="submit" variant="primary">Ekle</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal name="firm-link" class="md:w-[44rem]">
+        <form wire:submit="saveLink" class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ $linkDirection === 'manager' ? 'Bu firmayı yönetecek firma' : 'Bu firmanın yöneteceği firma' }}</flux:heading>
+                <flux:text class="mt-1">
+                    @if ($linkDirection === 'manager')
+                        Seçilen firmanın kullanıcıları <strong>{{ $firm->name }}</strong> üzerinde işlem yapabilecek.
+                    @else
+                        <strong>{{ $firm->name }}</strong> kullanıcıları seçilen firma üzerinde işlem yapabilecek.
+                    @endif
+                </flux:text>
+            </div>
+
+            <flux:select wire:model="linkFirmId" label="Firma" :disabled="(bool) $editingLinkId">
+                <flux:select.option value="">Seçiniz</flux:select.option>
+                @foreach ($this->otherFirms as $other)
+                    <flux:select.option value="{{ $other->id }}">{{ $other->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="manager" />
+
+            <x-permission-picker />
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close><flux:button variant="filled">Vazgeç</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary">Kaydet</flux:button>
             </div>
         </form>
     </flux:modal>

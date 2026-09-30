@@ -25,6 +25,9 @@
             <flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                 Kullanıcılar
             </flux:sidebar.item>
+            <flux:sidebar.item icon="link" :href="route('firm-access.index')" :current="request()->routeIs('firm-access.*')" wire:navigate>
+                Firma Erişimleri
+            </flux:sidebar.item>
         </flux:sidebar.group>
     @endif
 
