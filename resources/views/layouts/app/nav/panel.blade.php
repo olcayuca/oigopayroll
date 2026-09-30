@@ -19,6 +19,15 @@
         </flux:sidebar.item>
     </flux:sidebar.group>
 
+    @php($activeFirm = auth()->user()->activeFirm())
+    @if ($activeFirm && auth()->user()->can('manageUsers', $activeFirm))
+        <flux:sidebar.group heading="Firma Yönetimi" class="grid">
+            <flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                Kullanıcılar
+            </flux:sidebar.item>
+        </flux:sidebar.group>
+    @endif
+
     <flux:sidebar.group heading="Bordro" class="grid">
         <flux:sidebar.item icon="identification" badge="Yakında">Çalışanlar</flux:sidebar.item>
         <flux:sidebar.item icon="banknotes" badge="Yakında">Bordrolar</flux:sidebar.item>

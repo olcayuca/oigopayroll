@@ -80,7 +80,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
 
 ### 3.3 Firma kullanıcıları (Word: 1. Aşama – Müşteri Firma Kullanıcısı)
-- ⬜ Müşteri, kendi firmasına kullanıcı ekler ve yetkilendirir (firma kullanıcı yönetimi yetkisiyle)
+- ✅ Müşteri, kendi firmasına kullanıcı ekler ve firma / şirket / işyeri düzeyinde yetkilendirir (yalnızca sahip olduğu yetkileri verebilir; kendi ve HRD yetkilerine dokunamaz)
 
 ### 3.4 Çalışan Portalı (Word: 1. Aşama – Çalışan)
 - ✅ Karar: ayrı alan adı yok, çalışanlar panel.siteadi.com üzerinden giriş yapar (yalnızca kendi bilgileri)

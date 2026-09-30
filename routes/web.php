@@ -48,6 +48,8 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/{workplace}', 'pages::panel.workplaces.show')->name('workplaces.show');
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
 
+        Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
+
         Route::livewire('aktarim/{type}', 'pages::panel.imports.upload')->name('imports.create');
         Route::get('aktarim/{type}/sablon', DownloadImportTemplate::class)->name('imports.template');
     });

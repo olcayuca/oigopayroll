@@ -13,6 +13,11 @@ enum UserType: string
     case PayrollSpecialist = 'payroll_specialist';
     case ClientUser = 'client_user';
 
+    public function isClient(): bool
+    {
+        return $this === self::ClientUser;
+    }
+
     /**
      * Get the Turkish display label.
      */
