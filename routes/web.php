@@ -1,8 +1,11 @@
 <?php
 
+use App\Exports\ExportType;
 use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
+use App\Http\Controllers\DownloadReport;
+use App\Http\Controllers\ExportFirmRecords;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +44,9 @@ Route::domain(config('portals.admin'))
         Route::livewire('calisma-takvimi', 'pages::admin.holidays.index')->name('holidays.index');
         Route::livewire('kvkk', 'pages::admin.kvkk.index')->name('kvkk.index');
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
+        Route::livewire('raporlar', 'pages::admin.reports.index')->name('reports.index');
+        Route::get('raporlar/indir/{report}', DownloadReport::class)
+            ->whereIn('report', array_column(ExportType::cases(), 'value'))->name('reports.download');
         Route::get('kvkk/basvurular/{kvkkRequest}/veri', DownloadPersonalData::class)->name('kvkk.export');
     });
 
@@ -61,6 +67,7 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
 
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
+        Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri'])->name('exports.download');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
         Route::livewire('firma-erisimleri', 'pages::panel.firm-access.index')->name('firm-access.index');

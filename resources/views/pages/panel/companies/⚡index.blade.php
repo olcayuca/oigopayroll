@@ -48,6 +48,7 @@ new #[Title('Şirketler')] class extends PanelComponent {
         </div>
 
         <div class="flex flex-wrap gap-2">
+            <flux:button icon="arrow-down-tray" :href="route('exports.download', 'sirketler')">Excel İndir</flux:button>
             @can('import', [\App\Models\Company::class, $this->firm])
                 <flux:button icon="table-cells" :href="route('imports.create', 'sirket')" wire:navigate>Excel ile Aktar</flux:button>
             @endcan

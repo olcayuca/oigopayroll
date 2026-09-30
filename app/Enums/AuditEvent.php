@@ -54,6 +54,7 @@ enum AuditEvent: string
     case CompanyRestored = 'company.restored';
     case WorkplaceRestored = 'workplace.restored';
     case RecordPurged = 'system.record_purged';
+    case DataExported = 'system.data_exported';
     case ImportCompleted = 'import.completed';
 
     // System
@@ -113,6 +114,7 @@ enum AuditEvent: string
             self::CompanyRestored => 'Şirket geri alındı',
             self::WorkplaceRestored => 'İşyeri geri alındı',
             self::RecordPurged => 'Kayıt kalıcı olarak silindi',
+            self::DataExported => 'Excel dışa aktarma',
             self::ImportCompleted => 'Excel aktarımı tamamlandı',
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',

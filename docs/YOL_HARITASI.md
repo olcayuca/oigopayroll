@@ -70,6 +70,9 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Çöp kutusu (panel + admin): silinen şirket/işyerleri, kimin ne zaman sildiği; geri alma (silme yetkisiyle, hiyerarşi sırasıyla);
   kalıcı silme yalnızca admin'de (önce işyerleri, yetkiler temizlenir, işlem kaydı kalır)
   - ⬜ Çalışan/bordro verisi gelince: kalıcı silme bağlı kayıt varken engellenecek, yasal saklama süreleri uygulanacak
+- ✅ Raporlar (Admin → Raporlar): özet (firma durumları, tehlike sınıfları, il dağılımı, son 6 ay) ve Excel dışa aktarma
+  (firmalar, kullanıcılar, şirketler, işyerleri, işlem kayıtları); panelde Şirketler/İşyerleri "Excel İndir".
+  Şifre ve kimlik alanları hiçbir zaman dışa aktarılmaz; her dışa aktarma işlem kaydına yazılır.
 
 ### 2.3 Web Sitesi (landing içeriği)
 - ✅ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir

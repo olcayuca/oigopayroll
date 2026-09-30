@@ -4,6 +4,9 @@
         <flux:sidebar.item icon="home" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
             Gösterge Paneli
         </flux:sidebar.item>
+        <flux:sidebar.item icon="chart-bar" :href="route('admin.reports.index')" :current="request()->routeIs('admin.reports.*')" wire:navigate>
+            Raporlar
+        </flux:sidebar.item>
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Yönetim" class="grid">

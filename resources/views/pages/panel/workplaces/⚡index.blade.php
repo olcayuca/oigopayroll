@@ -65,6 +65,9 @@ new #[Title('İşyerleri')] class extends PanelComponent {
         </div>
 
         <div class="flex flex-wrap gap-2">
+            @if ($this->companies->isNotEmpty())
+                <flux:button icon="arrow-down-tray" :href="route('exports.download', ['type' => 'isyerleri', ...($companyId !== '' ? ['sirket' => $companyId] : [])])">Excel İndir</flux:button>
+            @endif
             @can('import', [\App\Models\Workplace::class, $this->firm])
                 <flux:button icon="table-cells" :href="route('imports.create', 'isyeri')" wire:navigate>Excel ile Aktar</flux:button>
             @endcan
