@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\MapsValidationErrors;
 use App\Livewire\Concerns\UsesActiveFirm;
 use Livewire\Component;
 
@@ -10,5 +11,5 @@ use Livewire\Component;
  */
 abstract class PanelComponent extends Component
 {
-    use UsesActiveFirm;
+    use MapsValidationErrors, UsesActiveFirm;
 }
