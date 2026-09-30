@@ -41,6 +41,18 @@ class SaveCompany
     }
 
     /**
+     * Soft-delete a company that has no workplaces.
+     */
+    public function delete(Company $company): void
+    {
+        if ($company->workplaces()->exists()) {
+            throw ValidationException::withMessages(['company' => 'İşyeri bulunan şirket silinemez; önce işyerlerini kaldırın.']);
+        }
+
+        $company->delete();
+    }
+
+    /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */

@@ -9,8 +9,14 @@
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Firma Bilgileri" class="grid">
-        <flux:sidebar.item icon="building-office" badge="Yakında">Şirketler</flux:sidebar.item>
-        <flux:sidebar.item icon="map-pin" badge="Yakında">İşyerleri</flux:sidebar.item>
+        <flux:sidebar.item icon="building-office" :href="route('companies.index')"
+            :current="request()->routeIs('companies.*') || request()->routeIs('imports.*') && request()->route('type') === 'sirket'" wire:navigate>
+            Şirketler
+        </flux:sidebar.item>
+        <flux:sidebar.item icon="map-pin" :href="route('workplaces.index')"
+            :current="request()->routeIs('workplaces.*') || request()->routeIs('imports.*') && request()->route('type') === 'isyeri'" wire:navigate>
+            İşyerleri
+        </flux:sidebar.item>
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Bordro" class="grid">

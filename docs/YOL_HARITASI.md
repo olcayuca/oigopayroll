@@ -68,16 +68,16 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 ## 3. Panel (panel.siteadi.com)
 
 ### 3.1 Şirketler (Word: 3. Aşama)
-- ⬜ Şirket listesi
-- ⬜ Manuel şirket oluşturma (7 zorunlu + diğer alanlar) ve düzenleme
-- ⬜ Excel ile toplu şirket: şablon indir → yükle → kontrol/önizleme → onayla
-- ⬜ İşyeri olmayan şirket uyarısı
+- ✅ Şirket listesi (arama, işyeri sayısı)
+- ✅ Manuel şirket oluşturma (7 zorunlu + diğer alanlar) ve düzenleme
+- ✅ Excel ile toplu şirket: şablon indir → yükle → kontrol/önizleme → onayla
+- ✅ İşyeri olmayan şirket uyarısı
 
 ### 3.2 İşyerleri (Word: 4. Aşama)
-- ⬜ İşyeri listesi (şirkete göre)
-- ⬜ Manuel işyeri oluşturma / düzenleme (tüm alanlar, il → ilçe filtreli, elle giriş)
-- ⬜ Şifre alanları maskeli, yetkiyle görüntüleme (loglu)
-- ⬜ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
+- ✅ İşyeri listesi (şirkete göre)
+- ✅ Manuel işyeri oluşturma / düzenleme (tüm alanlar, il → ilçe filtreli, elle giriş)
+- ✅ Şifre alanları maskeli, yetkiyle görüntüleme (loglu)
+- ✅ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
 
 ### 3.3 Firma kullanıcıları (Word: 1. Aşama – Müşteri Firma Kullanıcısı)
 - ⬜ Müşteri, kendi firmasına kullanıcı ekler ve yetkilendirir (firma kullanıcı yönetimi yetkisiyle)

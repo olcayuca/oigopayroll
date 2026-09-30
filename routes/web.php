@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadImportTemplate;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +37,19 @@ Route::domain(config('portals.panel'))
     ->middleware(['auth', 'verified'])
     ->group(function () {
         Route::livewire('/', 'pages::panel.dashboard')->name('dashboard');
+
+        Route::livewire('sirketler', 'pages::panel.companies.index')->name('companies.index');
+        Route::livewire('sirketler/yeni', 'pages::panel.companies.form')->name('companies.create');
+        Route::livewire('sirketler/{company}', 'pages::panel.companies.show')->name('companies.show');
+        Route::livewire('sirketler/{company}/duzenle', 'pages::panel.companies.form')->name('companies.edit');
+
+        Route::livewire('isyerleri', 'pages::panel.workplaces.index')->name('workplaces.index');
+        Route::livewire('isyerleri/yeni', 'pages::panel.workplaces.form')->name('workplaces.create');
+        Route::livewire('isyerleri/{workplace}', 'pages::panel.workplaces.show')->name('workplaces.show');
+        Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
+
+        Route::livewire('aktarim/{type}', 'pages::panel.imports.upload')->name('imports.create');
+        Route::get('aktarim/{type}/sablon', DownloadImportTemplate::class)->name('imports.template');
     });
 
 require __DIR__.'/settings.php';

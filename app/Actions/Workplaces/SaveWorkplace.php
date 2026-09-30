@@ -50,6 +50,14 @@ class SaveWorkplace
     }
 
     /**
+     * Soft-delete a workplace.
+     */
+    public function delete(Workplace $workplace): void
+    {
+        $workplace->delete();
+    }
+
+    /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
