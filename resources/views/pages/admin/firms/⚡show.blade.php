@@ -361,6 +361,13 @@ new #[Title('Firma Detayı')] class extends Component {
             </dd>
         </div>
         <div>
+            <dt class="text-sm text-zinc-500">Sorumlu Uzman</dt>
+            <dd class="mt-0.5">
+                {{ $firm->specialist->name ?? '—' }}
+                <a href="{{ route('admin.specialists.index', ['sekme' => 'firmalar', 'q' => $firm->name]) }}" wire:navigate class="ms-1 text-sm text-zinc-500 underline">değiştir</a>
+            </dd>
+        </div>
+        <div>
             <dt class="text-sm text-zinc-500">Oluşturulma</dt>
             <dd class="mt-0.5">{{ $firm->created_at?->format('d.m.Y H:i') }} @if ($firm->creator) · {{ $firm->creator->name }} @endif</dd>
         </div>

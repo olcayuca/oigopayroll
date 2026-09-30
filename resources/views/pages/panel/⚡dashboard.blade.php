@@ -110,6 +110,13 @@ new #[Title('Gösterge Paneli')] class extends Component {
                 <flux:text>İşyeri</flux:text>
                 <div class="mt-2 text-3xl font-semibold">{{ $this->stats['workplaces'] }}</div>
             </div>
+            @if ($this->firm->specialist?->is_active)
+                <div class="rounded-xl border border-zinc-200 p-5 sm:col-span-2 dark:border-zinc-700">
+                    <flux:text>Sorumlu bordro uzmanınız</flux:text>
+                    <div class="mt-2 font-semibold">{{ $this->firm->specialist->name }}</div>
+                    <a href="mailto:{{ $this->firm->specialist->email }}" class="text-sm text-zinc-500 hover:underline">{{ $this->firm->specialist->email }}</a>
+                </div>
+            @endif
         </div>
 
         @if ($this->stats['companies'] === 0)

@@ -32,6 +32,7 @@ enum AuditEvent: string
     case FirmReactivated = 'firm.reactivated';
     case FirmLinked = 'firm.linked';
     case FirmUnlinked = 'firm.unlinked';
+    case SpecialistAssigned = 'firm.specialist_assigned';
 
     // Users and access
     case UserCreated = 'user.created';
@@ -91,6 +92,7 @@ enum AuditEvent: string
             self::FirmReactivated => 'Firma aktifleştirildi',
             self::FirmLinked => 'Firmalar arası yetki verildi',
             self::FirmUnlinked => 'Firmalar arası yetki kaldırıldı',
+            self::SpecialistAssigned => 'Sorumlu uzman değişti',
             self::UserCreated => 'Kullanıcı oluşturuldu',
             self::UserUpdated => 'Kullanıcı güncellendi',
             self::UserActivated => 'Kullanıcı aktifleştirildi',

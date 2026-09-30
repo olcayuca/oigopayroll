@@ -19,6 +19,15 @@
         <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
             Kullanıcılar
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="user-group"
+            :href="route('admin.specialists.index')"
+            :current="request()->routeIs('admin.specialists.*')"
+            :badge="\App\Models\Firm::where('status', \App\Enums\FirmStatus::Active)->whereNull('specialist_id')->count() ?: null"
+            wire:navigate
+        >
+            Uzman Dağılımı
+        </flux:sidebar.item>
         <flux:sidebar.item icon="shield-check" :href="route('admin.permission-templates.index')" :current="request()->routeIs('admin.permission-templates.*')" wire:navigate>
             Yetki Şablonları
         </flux:sidebar.item>

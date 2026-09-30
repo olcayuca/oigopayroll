@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int|null $parent_firm_id
+ * @property int|null $specialist_id Sorumlu bordro uzmanı; set through AssignSpecialist.
+ * @property Carbon|null $specialist_assigned_at
  * @property string $name
  * @property string|null $title
  * @property string|null $tax_number
@@ -44,6 +46,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Company> $companies
  * @property-read Collection<int, Workplace> $workplaces
  * @property-read User|null $creator
+ * @property-read User|null $specialist
  * @property-read User|null $reviewer
  */
 #[Fillable([
@@ -122,6 +125,14 @@ class Firm extends Model
     /**
      * @return BelongsTo<User, $this>
      */
+    public function specialist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'specialist_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -179,6 +190,7 @@ class Firm extends Model
             'status' => FirmStatus::class,
             'source' => FirmSource::class,
             'reviewed_at' => 'datetime',
+            'specialist_assigned_at' => 'datetime',
         ];
     }
 }

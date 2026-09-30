@@ -30,6 +30,7 @@ Route::domain(config('portals.admin'))
 
         Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
         Route::livewire('kullanicilar/{user}', 'pages::admin.users.show')->name('users.show');
+        Route::livewire('uzman-dagilimi', 'pages::admin.specialists.index')->name('specialists.index');
         Route::livewire('yetki-sablonlari', 'pages::admin.permission-templates.index')->name('permission-templates.index');
 
         Route::livewire('ayarlar', 'pages::admin.settings.index')->name('settings.index');
