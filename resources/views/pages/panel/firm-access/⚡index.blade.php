@@ -19,8 +19,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 
 new #[Title('Firma Erişimleri')] class extends PanelComponent {
+    #[Url(as: 'sekme', except: 'yonettiklerimiz')]
+    public string $tab = 'yonettiklerimiz';
+
     // "Manage my firm" (incoming link)
     public ?int $editingLinkId = null;
 
@@ -196,6 +200,7 @@ new #[Title('Firma Erişimleri')] class extends PanelComponent {
         }
 
         unset($this->managerLinks);
+        $this->tab = 'yonetenler';
         Flux::modal('firm-link')->close();
         Flux::toast(variant: 'success', text: "{$manager->name} artık firmanızı yönetebilir. Kendi kullanıcılarını firmanıza atayacaklar.");
     }
@@ -333,6 +338,7 @@ new #[Title('Firma Erişimleri')] class extends PanelComponent {
 
         $this->reset('firmForm');
         unset($this->managedLinks, $this->assignments);
+        $this->tab = 'yonettiklerimiz';
         Flux::modal('sub-firm')->close();
         Flux::toast(variant: 'success', text: "\"{$firm->name}\" alt firma olarak oluşturuldu ve HRD onayına gönderildi.");
     }
@@ -358,10 +364,13 @@ new #[Title('Firma Erişimleri')] class extends PanelComponent {
         <flux:callout icon="information-circle" heading="Bu firmanın erişimlerini yalnızca kendi yetkilileri yönetebilir." />
     @endunless
 
-    {{-- Firms we manage --}}
+    <x-tabs :active="$tab"
+        :tabs="['yonettiklerimiz' => 'Yönettiğimiz Firmalar', 'yonetenler' => 'Firmamızı Yönetenler']"
+        :counts="['yonettiklerimiz' => $this->managedLinks->count(), 'yonetenler' => $this->managerLinks->count()]" />
+
+    @if ($tab === 'yonettiklerimiz')
     <section class="space-y-4">
         <div>
-            <flux:heading size="lg">Yönettiğimiz firmalar</flux:heading>
             <flux:text size="sm">Firmanızdan kullanıcıları bu firmalara atayın. Verebileceğiniz yetkiler, o firmanın size tanıdığı yetkilerle sınırlıdır.</flux:text>
         </div>
 
@@ -413,11 +422,12 @@ new #[Title('Firma Erişimleri')] class extends PanelComponent {
         @endforelse
     </section>
 
-    {{-- Firms that manage us --}}
+    @endif
+
+    @if ($tab === 'yonetenler')
     <section class="space-y-3">
         <div class="flex flex-wrap items-end justify-between gap-2">
             <div>
-                <flux:heading size="lg">Firmamızı yönetebilen firmalar</flux:heading>
                 <flux:text size="sm">Bu firmalar, kendi kullanıcılarını burada izin verdiğiniz yetkiler kadar firmanıza atayabilir.</flux:text>
             </div>
             @if ($this->isMember)
@@ -457,6 +467,8 @@ new #[Title('Firma Erişimleri')] class extends PanelComponent {
             </flux:table.rows>
         </flux:table>
     </section>
+
+    @endif
 
     <flux:modal name="firm-link" class="md:w-[44rem]">
         <form wire:submit="saveLink" class="space-y-6">

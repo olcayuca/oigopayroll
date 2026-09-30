@@ -82,7 +82,8 @@ class WorkplacesPageTest extends TestCase
 
         $this->get(route('workplaces.index'))->assertOk()->assertSee('Kadıköy Şube');
         $this->get(route('workplaces.create', ['sirket' => $this->company->id]))->assertOk();
-        $this->get(route('workplaces.show', $workplace))->assertOk()->assertSee('••••••••');
+        $this->get(route('workplaces.show', $workplace))->assertOk()->assertSee('Temel Bilgiler');
+        $this->get(route('workplaces.show', [$workplace, 'sekme' => 'sifreler']))->assertOk()->assertSee('••••••••');
         $this->get(route('workplaces.edit', $workplace))->assertOk()->assertDontSee($workplace->sgk_system_password);
         $this->get(route('imports.create', 'isyeri'))->assertOk();
     }
@@ -150,6 +151,7 @@ class WorkplacesPageTest extends TestCase
         $workplace = Workplace::factory()->for($this->company)->create(['sgk_system_password' => 'gizli']);
 
         Livewire::test('pages::panel.workplaces.show', ['workplace' => $workplace])
+            ->set('tab', 'sifreler')
             ->call('reveal', 'sgk_system_password')
             ->assertSee('gizli');
 
@@ -160,6 +162,7 @@ class WorkplacesPageTest extends TestCase
         $this->actingAs($viewer);
 
         Livewire::test('pages::panel.workplaces.show', ['workplace' => $workplace])
+            ->set('tab', 'sifreler')
             ->assertDontSee('Göster')
             ->call('reveal', 'sgk_system_password')
             ->assertForbidden();

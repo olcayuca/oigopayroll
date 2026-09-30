@@ -17,10 +17,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Kullanıcı')] class extends Component {
     public User $user;
+
+    #[Url(as: 'sekme', except: 'yetkiler')]
+    public string $tab = 'yetkiler';
 
     // Profile
     public string $name = '';
@@ -271,9 +275,13 @@ new #[Title('Kullanıcı')] class extends Component {
         </div>
     </div>
 
+    <x-tabs :active="$tab" :tabs="['yetkiler' => 'Yetkiler', 'hesap' => 'Hesap Bilgileri']"
+        :counts="$user->type === UserType::SuperAdmin ? [] : ['yetkiler' => $this->grants->count()]"
+        :invalid="$errors->hasAny(['name', 'email', 'type']) ? ['hesap'] : []" />
+
+    @if ($tab === 'hesap')
     <section class="max-w-2xl rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
         <form wire:submit="saveProfile" class="space-y-4">
-            <flux:heading size="lg">Hesap Bilgileri</flux:heading>
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="name" label="Ad Soyad" required />
                 <flux:input wire:model="email" type="email" label="E-posta" required />
@@ -288,10 +296,12 @@ new #[Title('Kullanıcı')] class extends Component {
             </div>
         </form>
     </section>
+    @endif
 
+    @if ($tab === 'yetkiler')
     <section class="space-y-3">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">Yetkiler</flux:heading>
+            <flux:text>Kullanıcının firma, şirket ve işyeri düzeyindeki yetkileri.</flux:text>
             @if ($user->type !== UserType::SuperAdmin)
                 <flux:button size="sm" icon="plus" wire:click="newGrant">Yetki Ekle</flux:button>
             @endif
@@ -337,6 +347,8 @@ new #[Title('Kullanıcı')] class extends Component {
             </flux:table>
         @endif
     </section>
+
+    @endif
 
     <flux:modal name="grant" class="md:w-[44rem]">
         <form wire:submit="saveGrant" class="space-y-6">

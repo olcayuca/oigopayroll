@@ -25,6 +25,36 @@ new #[Title('İşyeri')] class extends PanelComponent {
     /** Il / ilçe typed manually instead of chosen from the list. */
     public bool $manualLocation = false;
 
+    public string $tab = 'temel';
+
+    /**
+     * Which form tab each field lives on.
+     */
+    public const FIELD_TABS = [
+        'temel' => ['companyId', 'workplace_no', 'branch_name', 'workplace_type', 'workplace_kind', 'title', 'registration_type',
+            'tax_number', 'tax_office', 'mersis_no', 'risk_class_id', 'hazard_class', 'labor_sector_id'],
+        'adres' => ['province_id', 'province_name', 'district_id', 'district_name', 'neighborhood', 'street', 'outer_door_no',
+            'inner_door_no', 'postal_code', 'address', 'phone', 'mobile_phone', 'email', 'kep_address', 'e_signature_officer'],
+        'sgk' => ['sgk_officer_name', 'sgk_workplace_code', 'ebildirge_officer_name', 'opening_date', 'closing_date',
+            'sgk_registry_no', 'sgk_directorate', 'mahiyet_code', 'mahiyet_name', 'sgk_declaration_username',
+            'sgk_workplace_password', 'sgk_system_password'],
+        'iskur' => ['iskur_user_name', 'iskur_user_code', 'iskur_password', 'iskur_registry_no', 'tuik_user_full_name',
+            'tuik_username', 'tuik_password', 'tax_office_user_code', 'ebeyanname_password'],
+        'sendika' => ['has_union', 'union_name', 'cba_start_date', 'cba_end_date', 'cba_signed_date'],
+    ];
+
+    /**
+     * Tabs holding fields with validation errors, in tab order.
+     *
+     * @return list<string>
+     */
+    public function invalidTabs(): array
+    {
+        $fields = array_map(fn ($key) => str_replace('form.', '', $key), $this->getErrorBag()->keys());
+
+        return array_keys(array_filter(self::FIELD_TABS, fn ($tabFields) => array_intersect($tabFields, $fields) !== []));
+    }
+
     /** @var array<string, mixed> */
     public array $form = [];
 
@@ -183,6 +213,7 @@ new #[Title('İşyeri')] class extends PanelComponent {
 
                 if (! $company) {
                     $this->addError('companyId', 'Şirket seçiniz.');
+                    $this->tab = 'temel';
 
                     return;
                 }
@@ -195,6 +226,8 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 $this->addError(array_key_exists($field, $this->form) ? "form.{$field}" : $field, $messages[0]);
             }
 
+            // Open the first tab with an error.
+            $this->tab = $this->invalidTabs()[0] ?? $this->tab;
             Flux::toast(variant: 'danger', text: 'Formda düzeltilmesi gereken alanlar var.');
 
             return;
@@ -224,7 +257,10 @@ new #[Title('İşyeri')] class extends PanelComponent {
     @enderror
 
     <form wire:submit="save" class="max-w-5xl space-y-8">
-        {{-- Temel bilgiler --}}
+        <x-tabs :active="$tab" :invalid="$this->invalidTabs()"
+            :tabs="['temel' => 'Temel Bilgiler', 'adres' => 'Adres ve İletişim', 'sgk' => 'SGK', 'iskur' => 'İŞKUR / TÜİK / Vergi', 'sendika' => 'Sendika / TİS']" />
+
+        @if ($tab === 'temel')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <flux:heading size="lg">İşyeri Temel Bilgileri</flux:heading>
 
@@ -297,7 +333,9 @@ new #[Title('İşyeri')] class extends PanelComponent {
             </div>
         </section>
 
-        {{-- Adres ve iletişim --}}
+        @endif
+
+        @if ($tab === 'adres')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <flux:heading size="lg">Adres ve İletişim</flux:heading>
@@ -340,7 +378,9 @@ new #[Title('İşyeri')] class extends PanelComponent {
             </div>
         </section>
 
-        {{-- SGK --}}
+        @endif
+
+        @if ($tab === 'sgk')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <div>
                 <flux:heading size="lg">SGK Bilgileri</flux:heading>
@@ -364,7 +404,9 @@ new #[Title('İşyeri')] class extends PanelComponent {
             </div>
         </section>
 
-        {{-- İŞKUR / TÜİK / Vergi --}}
+        @endif
+
+        @if ($tab === 'iskur')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <flux:heading size="lg">İŞKUR / TÜİK / Vergi Bilgileri</flux:heading>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -380,7 +422,9 @@ new #[Title('İşyeri')] class extends PanelComponent {
             </div>
         </section>
 
-        {{-- Sendika --}}
+        @endif
+
+        @if ($tab === 'sendika')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <div class="flex items-center justify-between">
                 <flux:heading size="lg">Sendika / Toplu İş Sözleşmesi</flux:heading>
@@ -397,6 +441,8 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 </div>
             @endif
         </section>
+
+        @endif
 
         <div class="flex justify-end gap-2">
             <flux:button :href="$workplace ? route('workplaces.show', $workplace) : route('workplaces.index')" wire:navigate>Vazgeç</flux:button>

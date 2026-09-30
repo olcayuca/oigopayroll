@@ -158,10 +158,20 @@ class FirmsPageTest extends TestCase
         $this->actingAs(User::factory()->superAdmin()->create());
         $company = Company::factory()->create(['title' => 'Örnek Teknoloji A.Ş.']);
 
+        // Groups live in tabs; the companies tab is reachable by URL.
         $this->get(route('admin.firms.show', $company->firm))
+            ->assertOk()
+            ->assertSee('Genel Bilgiler')
+            ->assertDontSee('Örnek Teknoloji A.Ş.');
+
+        $this->get(route('admin.firms.show', [$company->firm, 'sekme' => 'sirketler']))
             ->assertOk()
             ->assertSee('Örnek Teknoloji A.Ş.')
             ->assertSee('İşyeri yok');
+
+        Livewire::test('pages::admin.firms.show', ['firm' => $company->firm])
+            ->call('$set', 'tab', 'sirketler')
+            ->assertSee('Örnek Teknoloji A.Ş.');
     }
 
     public function test_client_users_cannot_open_admin_pages(): void

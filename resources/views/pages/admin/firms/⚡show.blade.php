@@ -19,12 +19,16 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Firma Detayı')] class extends Component {
     use MapsValidationErrors;
 
     public Firm $firm;
+
+    #[Url(as: 'sekme', except: 'genel')]
+    public string $tab = 'genel';
 
     public string $rejectionReason = '';
 
@@ -327,23 +331,50 @@ new #[Title('Firma Detayı')] class extends Component {
     @elseif ($firm->status === FirmStatus::Passive)
         <flux:callout icon="pause-circle" heading="Pasif"
             text="Bu firmada şirket, işyeri ve bordro işlemleri yapılamaz." />
-    @elseif ($firm->reviewed_at)
-        <flux:text size="sm">Onaylayan: {{ $firm->reviewer?->name }}, {{ $firm->reviewed_at->format('d.m.Y H:i') }}</flux:text>
     @endif
 
-    <dl class="grid gap-x-8 gap-y-3 rounded-xl border border-zinc-200 p-6 sm:grid-cols-2 lg:grid-cols-4 dark:border-zinc-700">
-        @foreach (['title' => 'Unvan', 'tax_number' => 'Vergi No', 'tax_office' => 'Vergi Dairesi', 'contact_name' => 'Yetkili Kişi',
+    <x-tabs :active="$tab"
+        :tabs="['genel' => 'Genel Bilgiler', 'kullanicilar' => 'Kullanıcılar', 'erisim' => 'Firmalar Arası Yetki', 'sirketler' => 'Şirketler']"
+        :counts="['kullanicilar' => $this->grants->count(), 'erisim' => $this->managerLinks->count() + $this->managedLinks->count(), 'sirketler' => $this->companies->count()]" />
+
+    @if ($tab === 'genel')
+    <dl class="grid gap-x-8 gap-y-4 rounded-xl border border-zinc-200 p-6 sm:grid-cols-2 lg:grid-cols-4 dark:border-zinc-700">
+        @foreach (['name' => 'Firma Adı', 'title' => 'Unvan', 'tax_number' => 'Vergi No', 'tax_office' => 'Vergi Dairesi', 'contact_name' => 'Yetkili Kişi',
                    'phone' => 'Telefon', 'email' => 'E-posta', 'address' => 'Adres'] as $field => $label)
             <div @class(['lg:col-span-2' => $field === 'address'])>
                 <dt class="text-sm text-zinc-500">{{ $label }}</dt>
                 <dd class="mt-0.5">{{ $firm->{$field} ?: '—' }}</dd>
             </div>
         @endforeach
+        <div>
+            <dt class="text-sm text-zinc-500">Kaynak</dt>
+            <dd class="mt-0.5">{{ $firm->source->label() }}</dd>
+        </div>
+        <div>
+            <dt class="text-sm text-zinc-500">Üst Firma</dt>
+            <dd class="mt-0.5">
+                @if ($firm->parent)
+                    <a href="{{ route('admin.firms.show', $firm->parent) }}" wire:navigate class="underline">{{ $firm->parent->name }}</a>
+                @else
+                    —
+                @endif
+            </dd>
+        </div>
+        <div>
+            <dt class="text-sm text-zinc-500">Oluşturulma</dt>
+            <dd class="mt-0.5">{{ $firm->created_at?->format('d.m.Y H:i') }} @if ($firm->creator) · {{ $firm->creator->name }} @endif</dd>
+        </div>
+        <div>
+            <dt class="text-sm text-zinc-500">İnceleme</dt>
+            <dd class="mt-0.5">{{ $firm->reviewed_at ? $firm->reviewed_at->format('d.m.Y H:i').' · '.($firm->reviewer->name ?? '') : '—' }}</dd>
+        </div>
     </dl>
+    @endif
 
+    @if ($tab === 'kullanicilar')
     <section class="space-y-3">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">Firma Kullanıcıları</flux:heading>
+            <flux:text>Bu firmada firma düzeyinde yetkili kullanıcılar.</flux:text>
             @can('manageUsers', $firm)
                 <flux:modal.trigger name="add-user">
                     <flux:button size="sm" icon="user-plus">Kullanıcı Ekle</flux:button>
@@ -390,11 +421,13 @@ new #[Title('Firma Detayı')] class extends Component {
         </flux:table>
     </section>
 
+    @endif
+
+    @if ($tab === 'erisim')
     <section class="space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-                <flux:heading size="lg">Firmalar Arası Yetki</flux:heading>
-                <flux:text size="sm">Yönetici firmanın kullanıcıları, kendi firmalarındaki yetkileri ile burada izin verilen yetkilerin kesişimi kadar işlem yapar.</flux:text>
+                <flux:text size="sm">Bağlantı tek başına kimseye erişim vermez: yönetici firma kendi kullanıcılarını yönetilen firmaya atar; atananlar burada izin verilen yetkilerle sınırlıdır.</flux:text>
             </div>
             @can('update', $firm)
                 <div class="flex gap-2">
@@ -447,8 +480,10 @@ new #[Title('Firma Detayı')] class extends Component {
         </flux:table>
     </section>
 
+    @endif
+
+    @if ($tab === 'sirketler')
     <section class="space-y-3">
-        <flux:heading size="lg">Şirketler</flux:heading>
 
         <flux:table>
             <flux:table.columns>
@@ -488,6 +523,8 @@ new #[Title('Firma Detayı')] class extends Component {
             </flux:table.rows>
         </flux:table>
     </section>
+
+    @endif
 
     <flux:modal name="reject-firm" class="md:w-[28rem]">
         <form wire:submit="reject" class="space-y-6">

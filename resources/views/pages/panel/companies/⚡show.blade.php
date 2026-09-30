@@ -10,9 +10,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 
 new #[Title('Şirket')] class extends PanelComponent {
     public Company $company;
+
+    #[Url(as: 'sekme', except: 'bilgiler')]
+    public string $tab = 'bilgiler';
 
     public function mount(Company $company): void
     {
@@ -77,8 +81,15 @@ new #[Title('Şirket')] class extends PanelComponent {
             text="Tek işyeri olsa bile (şubesi olmasa da) en az bir işyeri tanımlanması zorunludur." />
     @endif
 
+    <x-tabs :active="$tab" :tabs="['bilgiler' => 'Şirket Bilgileri', 'isyerleri' => 'İşyerleri']"
+        :counts="['isyerleri' => $this->workplaces->count()]" />
+
+    @if ($tab === 'bilgiler')
     <dl class="grid gap-x-8 gap-y-4 rounded-xl border border-zinc-200 p-6 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
         @foreach ([
+            'Şirket Numarası' => $company->company_no,
+            'Şirket Tipi' => $company->company_type->label(),
+            'Sektör' => $company->sector->name,
             'Kısa Ad' => $company->short_name,
             'Vergi Numarası' => $company->tax_number,
             'Vergi Dairesi' => $company->tax_office,
@@ -95,10 +106,12 @@ new #[Title('Şirket')] class extends PanelComponent {
             </div>
         @endforeach
     </dl>
+    @endif
 
+    @if ($tab === 'isyerleri')
     <section class="space-y-3">
         <div class="flex items-center justify-between">
-            <flux:heading size="lg">İşyerleri</flux:heading>
+            <flux:text>Bu şirkete bağlı işyerleri.</flux:text>
             @can('create', [\App\Models\Workplace::class, $company])
                 <flux:button size="sm" icon="plus" :href="route('workplaces.create', ['sirket' => $company->id])" wire:navigate>İşyeri Ekle</flux:button>
             @endcan
@@ -131,4 +144,5 @@ new #[Title('Şirket')] class extends PanelComponent {
             </flux:table.rows>
         </flux:table>
     </section>
+    @endif
 </div>

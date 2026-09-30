@@ -13,6 +13,23 @@ use Livewire\Attributes\Title;
 new #[Title('Şirket')] class extends PanelComponent {
     public ?Company $company = null;
 
+    public string $tab = 'sirket';
+
+    public const FIELD_TABS = [
+        'sirket' => ['company_no', 'title', 'short_name', 'company_type', 'sector_id', 'tax_number', 'tax_office'],
+        'diger' => ['website', 'kep_address', 'trade_registry_no', 'mersis_no', 'phone', 'address'],
+    ];
+
+    /**
+     * @return list<string>
+     */
+    public function invalidTabs(): array
+    {
+        $fields = array_map(fn ($key) => str_replace('form.', '', $key), $this->getErrorBag()->keys());
+
+        return array_keys(array_filter(self::FIELD_TABS, fn ($tabFields) => array_intersect($tabFields, $fields) !== []));
+    }
+
     /** @var array<string, string|null> */
     public array $form = [
         'company_no' => '', 'title' => '', 'short_name' => '', 'company_type' => '', 'sector_id' => '',
@@ -71,6 +88,8 @@ new #[Title('Şirket')] class extends PanelComponent {
                 $this->addError(array_key_exists($field, $this->form) ? "form.{$field}" : $field, $messages[0]);
             }
 
+            $this->tab = $this->invalidTabs()[0] ?? $this->tab;
+
             return;
         }
 
@@ -97,12 +116,13 @@ new #[Title('Şirket')] class extends PanelComponent {
         <flux:callout icon="exclamation-triangle" color="red" :heading="$message" />
     @enderror
 
-    <form wire:submit="save" class="max-w-4xl space-y-8">
+    <form wire:submit="save" class="max-w-4xl space-y-6">
+        <x-tabs :active="$tab" :invalid="$this->invalidTabs()"
+            :tabs="['sirket' => 'Şirket Bilgileri (zorunlu)', 'diger' => 'Diğer Bilgiler']" />
+
+        @if ($tab === 'sirket')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-            <div>
-                <flux:heading size="lg">Şirket Bilgileri</flux:heading>
-                <flux:text class="mt-1">Zorunlu alanlar tamamlanmadan şirket kaydı oluşturulamaz.</flux:text>
-            </div>
+            <flux:text>Zorunlu alanlar tamamlanmadan şirket kaydı oluşturulamaz.</flux:text>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="form.company_no" label="Şirket Numarası" required description="Sistem genelinde benzersiz olmalıdır." />
@@ -127,12 +147,11 @@ new #[Title('Şirket')] class extends PanelComponent {
                 <flux:input wire:model="form.tax_office" label="Vergi Dairesi" required />
             </div>
         </section>
+        @endif
 
+        @if ($tab === 'diger')
         <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-            <div>
-                <flux:heading size="lg">Diğer Şirket Bilgileri</flux:heading>
-                <flux:text class="mt-1">Bu bilgiler zorunlu değildir.</flux:text>
-            </div>
+            <flux:text>Bu bilgiler zorunlu değildir.</flux:text>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="form.website" label="Web Adresi" placeholder="https://" />
@@ -145,6 +164,7 @@ new #[Title('Şirket')] class extends PanelComponent {
                 </div>
             </div>
         </section>
+        @endif
 
         <div class="flex justify-end gap-2">
             <flux:button :href="$company ? route('companies.show', $company) : route('companies.index')" wire:navigate>Vazgeç</flux:button>

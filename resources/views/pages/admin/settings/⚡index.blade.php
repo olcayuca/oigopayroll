@@ -222,12 +222,9 @@ new #[Title('Sistem Ayarları')] class extends Component {
         <flux:text class="mt-1">Genel bilgiler, seçim listeleri ve güvenlik kayıtları.</flux:text>
     </div>
 
-    <flux:radio.group wire:model.live="tab" variant="segmented">
-        <flux:radio value="genel" label="Genel" />
-        <flux:radio value="sectors" label="Sektörler" />
-        <flux:radio value="risk-classes" label="Risk Sınıfları" />
-        <flux:radio value="logs" label="Şifre Erişim Kayıtları" />
-    </flux:radio.group>
+    <x-tabs :active="$tab"
+        :tabs="['genel' => 'Genel', 'sectors' => 'Sektörler', 'risk-classes' => 'Risk Sınıfları', 'logs' => 'Şifre Erişim Kayıtları']"
+        :invalid="$errors->hasAny(array_map(fn ($f) => 'general.'.$f, array_keys($this->generalFields))) ? ['genel'] : []" />
 
     @if ($tab === 'genel')
         <form wire:submit="saveGeneral" class="max-w-2xl space-y-4">

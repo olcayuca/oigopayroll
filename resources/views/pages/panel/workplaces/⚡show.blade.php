@@ -8,9 +8,13 @@ use App\Validation\WorkplaceRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 
 new #[Title('İşyeri')] class extends PanelComponent {
     public Workplace $workplace;
+
+    #[Url(as: 'sekme', except: 'temel')]
+    public string $tab = 'temel';
 
     /**
      * Credentials revealed on this page view (each reveal is authorized and logged).
@@ -49,6 +53,23 @@ new #[Title('İşyeri')] class extends PanelComponent {
     }
 
     /**
+     * Tab key => label. The credentials tab is rendered separately.
+     *
+     * @return array<string, string>
+     */
+    public function tabLabels(): array
+    {
+        return [
+            'temel' => 'Temel Bilgiler',
+            'adres' => 'Adres ve İletişim',
+            'sgk' => 'SGK',
+            'iskur' => 'İŞKUR / TÜİK / Vergi',
+            'sendika' => 'Sendika / TİS',
+            'sifreler' => 'Kullanıcı Bilgileri ve Şifreler',
+        ];
+    }
+
+    /**
      * @return array<string, array<string, string|null>>
      */
     public function sections(): array
@@ -57,7 +78,7 @@ new #[Title('İşyeri')] class extends PanelComponent {
         $date = fn ($value) => $value?->format('d.m.Y');
 
         return [
-            'Temel Bilgiler' => [
+            'temel' => [
                 'İşyeri Tipi' => $w->workplace_type->label(),
                 'İşyeri Türü' => $w->workplace_kind->label(),
                 'Ünvan' => $w->title,
@@ -69,7 +90,7 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 'Tehlike Sınıfı' => $w->hazard_class->label(),
                 'ÇSGB İş Kolu' => $w->laborSector ? $w->laborSector->id.' · '.$w->laborSector->name : null,
             ],
-            'Adres ve İletişim' => [
+            'adres' => [
                 'İl / İlçe' => $w->provinceLabel().' / '.$w->districtLabel(),
                 'Mahalle' => $w->neighborhood,
                 'Cadde / Sokak' => $w->street,
@@ -82,7 +103,7 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 'KEP Adresi' => $w->kep_address,
                 'E-İmza Yetkilisi' => $w->e_signature_officer,
             ],
-            'SGK' => [
+            'sgk' => [
                 'SGK Sicil Numarası' => $w->sgk_registry_no,
                 'Bağlı SGK Müdürlüğü' => $w->sgk_directorate,
                 'SGK İşyeri Yetkilisi' => $w->sgk_officer_name,
@@ -92,14 +113,14 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 'Kapanış Tarihi' => $date($w->closing_date),
                 'Mahiyet' => trim(($w->mahiyet_code ?? '').' '.($w->mahiyet_name ?? '')) ?: null,
             ],
-            'İŞKUR / TÜİK / Vergi' => [
+            'iskur' => [
                 'İŞKUR Kullanıcı Adı Soyadı' => $w->iskur_user_name,
                 'İŞKUR Sicil Numarası' => $w->iskur_registry_no,
                 'TÜİK Kullanıcı Adı Soyadı' => $w->tuik_user_full_name,
                 'TÜİK Kullanıcı Adı' => $w->tuik_username,
                 'Vergi Dairesi Kullanıcı Kodu' => $w->tax_office_user_code,
             ],
-            'Sendika / TİS' => $w->has_union ? [
+            'sendika' => $w->has_union ? [
                 'Sendika' => $w->union_name,
                 'TİS Başlangıç' => $date($w->cba_start_date),
                 'TİS Bitiş' => $date($w->cba_end_date),
@@ -130,27 +151,23 @@ new #[Title('İşyeri')] class extends PanelComponent {
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-2">
-        @foreach ($this->sections() as $heading => $rows)
-            <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-                <flux:heading size="lg">{{ $heading }}</flux:heading>
-                <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                    @foreach ($rows as $label => $value)
-                        <div>
-                            <dt class="text-sm text-zinc-500">{{ $label }}</dt>
-                            <dd class="mt-0.5 break-words">{{ $value ?: '—' }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            </section>
-        @endforeach
+    <x-tabs :active="$tab" :tabs="$this->tabLabels()" />
 
-        <section class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+    @if ($tab !== 'sifreler')
+        <dl class="grid gap-x-8 gap-y-4 rounded-xl border border-zinc-200 p-6 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
+            @foreach ($this->sections()[$tab] ?? [] as $label => $value)
+                <div>
+                    <dt class="text-sm text-zinc-500">{{ $label }}</dt>
+                    <dd class="mt-0.5 break-words">{{ $value ?: '—' }}</dd>
+                </div>
+            @endforeach
+        </dl>
+    @else
+        <section class="max-w-3xl rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <div class="flex items-center gap-2">
                 <flux:icon name="lock-closed" class="size-5 text-zinc-400" />
-                <flux:heading size="lg">Kullanıcı Bilgileri ve Şifreler</flux:heading>
+                <flux:text>Şifreli saklanır. Her görüntüleme kaydedilir.</flux:text>
             </div>
-            <flux:text size="sm" class="mt-1">Şifreli saklanır. Her görüntüleme kaydedilir.</flux:text>
 
             <dl class="mt-4 space-y-3">
                 @foreach (\App\Models\Workplace::SECRET_FIELDS as $field)
@@ -181,5 +198,5 @@ new #[Title('İşyeri')] class extends PanelComponent {
                 @endforeach
             </dl>
         </section>
-    </div>
+    @endif
 </div>
