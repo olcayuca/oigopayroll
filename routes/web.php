@@ -28,7 +28,7 @@ Route::domain(config('portals.admin'))
 Route::domain(config('portals.panel'))
     ->middleware(['auth', 'verified'])
     ->group(function () {
-        Route::view('/', 'dashboard')->name('dashboard');
+        Route::livewire('/', 'pages::panel.dashboard')->name('dashboard');
     });
 
 require __DIR__.'/settings.php';

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Portal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PortalTest extends TestCase
@@ -52,30 +53,45 @@ class PortalTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'x@example.com']);
     }
 
-    public function test_hrd_staff_can_only_sign_in_on_admin(): void
+    public function test_super_admin_can_sign_in_on_admin_and_panel(): void
     {
         $admin = User::factory()->superAdmin()->create();
-
-        $this->post('https://panel.oigopayroll.test/login', ['email' => $admin->email, 'password' => 'password'])
-            ->assertSessionHasErrors('email');
-        $this->assertGuest();
 
         $this->post('https://admin.oigopayroll.test/login', ['email' => $admin->email, 'password' => 'password'])
             ->assertSessionHasNoErrors();
         $this->assertAuthenticatedAs($admin);
+
+        $this->post('https://admin.oigopayroll.test/logout');
+        $this->assertGuest();
+
+        $this->post('https://panel.oigopayroll.test/login', ['email' => $admin->email, 'password' => 'password'])
+            ->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($admin);
     }
 
-    public function test_client_users_can_only_sign_in_on_panel(): void
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function panelOnlyUsers(): array
     {
-        $client = User::factory()->create();
+        return [
+            'client user' => ['client_user'],
+            'payroll specialist' => ['payroll_specialist'],
+        ];
+    }
 
-        $this->post('https://admin.oigopayroll.test/login', ['email' => $client->email, 'password' => 'password'])
+    #[DataProvider('panelOnlyUsers')]
+    public function test_other_users_can_only_sign_in_on_panel(string $type): void
+    {
+        $user = User::factory()->create(['type' => $type]);
+
+        $this->post('https://admin.oigopayroll.test/login', ['email' => $user->email, 'password' => 'password'])
             ->assertSessionHasErrors('email');
         $this->assertGuest();
 
-        $this->post('https://panel.oigopayroll.test/login', ['email' => $client->email, 'password' => 'password'])
+        $this->post('https://panel.oigopayroll.test/login', ['email' => $user->email, 'password' => 'password'])
             ->assertSessionHasNoErrors();
-        $this->assertAuthenticatedAs($client);
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_inactive_users_cannot_sign_in(): void
@@ -89,7 +105,7 @@ class PortalTest extends TestCase
 
     public function test_signed_in_user_of_the_wrong_type_is_logged_out(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->payrollSpecialist()->create())
             ->get('https://admin.oigopayroll.test/')
             ->assertRedirect('/login')
             ->assertSessionHasErrors('email');

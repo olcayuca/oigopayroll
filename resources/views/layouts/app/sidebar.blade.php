@@ -10,28 +10,11 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-
-            <flux:sidebar.nav>
-                <flux:sidebar.group class="grid">
-                    <flux:sidebar.item icon="home" :href="url('/')" :current="request()->routeIs('dashboard', 'admin.dashboard')" wire:navigate>
-                        Gösterge Paneli
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
-
-                @if (\App\Enums\Portal::fromHost(request()->getHost()) === \App\Enums\Portal::Admin)
-                    <flux:sidebar.group heading="Firma Yönetimi" class="grid">
-                        <flux:sidebar.item
-                            icon="building-office-2"
-                            :href="route('admin.firms.index')"
-                            :current="request()->routeIs('admin.firms.*')"
-                            :badge="\App\Models\Firm::visibleTo(auth()->user())->where('status', \App\Enums\FirmStatus::Pending)->count() ?: null"
-                            wire:navigate
-                        >
-                            Firmalar
-                        </flux:sidebar.item>
-                    </flux:sidebar.group>
-                @endif
-            </flux:sidebar.nav>
+            @if (\App\Enums\Portal::fromHost(request()->getHost()) === \App\Enums\Portal::Admin)
+                @include('layouts.app.nav.admin')
+            @else
+                @include('layouts.app.nav.panel')
+            @endif
 
             <flux:spacer />
 

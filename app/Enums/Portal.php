@@ -67,9 +67,12 @@ enum Portal: string
             return false;
         }
 
+        // Admin: system management (firms, users, website, settings), super admins only.
+        // Panel: day-to-day work (companies, workplaces, payroll) for client users and HRD staff,
+        // each limited to the firms they can see.
         return match ($this) {
-            self::Admin => $user->isHrdStaff(),
-            self::Panel => $user->type === UserType::ClientUser,
+            self::Admin => $user->type === UserType::SuperAdmin,
+            self::Panel => true,
             self::Landing => false,
         };
     }

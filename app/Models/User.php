@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Concerns\HasCurrentFirm;
 use App\Concerns\HasScopedAccess;
 use App\Enums\UserType;
 use Database\Factories\UserFactory;
@@ -24,6 +25,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $email
  * @property UserType $type
  * @property bool $is_active
+ * @property int|null $current_firm_id
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -33,13 +35,14 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AccessGrant> $accessGrants
+ * @property-read Firm|null $currentFirm
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasScopedAccess, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasCurrentFirm, HasFactory, HasScopedAccess, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * The model's default values for attributes.

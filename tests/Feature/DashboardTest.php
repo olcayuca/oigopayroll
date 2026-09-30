@@ -23,10 +23,18 @@ class DashboardTest extends TestCase
             ->assertOk();
     }
 
-    public function test_hrd_staff_can_visit_the_admin_dashboard(): void
+    public function test_super_admin_can_visit_the_admin_dashboard(): void
     {
-        $this->actingAs(User::factory()->payrollSpecialist()->create())
+        $this->actingAs(User::factory()->superAdmin()->create())
             ->get(route('admin.dashboard'))
             ->assertOk();
+    }
+
+    public function test_payroll_specialists_work_in_the_panel_not_the_admin(): void
+    {
+        $specialist = User::factory()->payrollSpecialist()->create();
+
+        $this->actingAs($specialist)->get(route('dashboard'))->assertOk();
+        $this->actingAs($specialist)->get(route('admin.dashboard'))->assertRedirect('/login');
     }
 }

@@ -111,8 +111,10 @@ class FirmsPageTest extends TestCase
 
         $this->assertSame(FirmStatus::Pending, $granted->refresh()->status);
 
-        $this->get(route('admin.firms.show', $other))->assertForbidden();
+        // Besides the component's own checks, the admin host itself is closed to specialists.
+        $this->get(route('admin.firms.show', $other))->assertRedirect('/login');
 
+        $this->actingAs($specialist);
         Livewire::test('pages::admin.firms.index')->set('name', 'X')->call('createFirm')->assertForbidden();
     }
 
