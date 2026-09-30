@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Enums\ImportType;
 use App\Support\Fields\CompanyFields;
 use App\Support\Fields\Field;
+use App\Support\Fields\FirmFields;
 use App\Support\Fields\WorkplaceFields;
 use App\Support\Text;
 
@@ -16,6 +17,7 @@ final class ImportColumns
     public static function for(ImportType $type): array
     {
         return match ($type) {
+            ImportType::Firm => FirmFields::all(),
             ImportType::Company => CompanyFields::all(),
             ImportType::Workplace => WorkplaceFields::all(),
         };

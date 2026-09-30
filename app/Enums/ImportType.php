@@ -9,17 +9,40 @@ enum ImportType: string
 {
     use HasLabels;
 
+    case Firm = 'firm';
     case Company = 'company';
     case Workplace = 'workplace';
 
     /**
-     * URL segment used in the panel (aktarim/sirket, aktarim/isyeri).
+     * URL segment (panel: aktarim/sirket, aktarim/isyeri; admin: firma).
      */
     public function slug(): string
     {
         return match ($this) {
+            self::Firm => 'firma',
             self::Company => 'sirket',
             self::Workplace => 'isyeri',
+        };
+    }
+
+    /**
+     * Name of the data sheet in the Excel template.
+     */
+    public function sheetTitle(): string
+    {
+        return match ($this) {
+            self::Firm => 'Firmalar',
+            self::Company => 'Şirketler',
+            self::Workplace => 'İşyerleri',
+        };
+    }
+
+    public function templateFilename(): string
+    {
+        return match ($this) {
+            self::Firm => 'HRD_Firma_Sablonu.xlsx',
+            self::Company => 'HRD_Sirket_Sablonu.xlsx',
+            self::Workplace => 'HRD_Isyeri_Sablonu.xlsx',
         };
     }
 
@@ -40,6 +63,7 @@ enum ImportType: string
     public function label(): string
     {
         return match ($this) {
+            self::Firm => 'Firma',
             self::Company => 'Şirket',
             self::Workplace => 'İşyeri',
         };

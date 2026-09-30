@@ -29,7 +29,9 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
 
     public function mount(string $type): void
     {
-        $this->type = (ImportType::fromSlug($type) ?? abort(404))->value;
+        $importType = ImportType::fromSlug($type);
+        abort_if($importType === null || $importType === ImportType::Firm, 404);
+        $this->type = $importType->value;
 
         $this->authorize('import', [$this->modelClass(), $this->firm]);
     }
@@ -150,94 +152,8 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
     </div>
 
     @if (! $this->import || $this->import->status === \App\Enums\ImportStatus::Cancelled)
-        <div class="grid gap-4 lg:grid-cols-2">
-            <div class="rounded-xl border border-dashed border-zinc-300 p-6 dark:border-zinc-600">
-                <flux:heading>1. Şablonu indirin</flux:heading>
-                <flux:text class="mt-1">Zorunlu sütunlar sarı işaretlidir; açılır listeler ve "Açıklamalar" sayfası şablonun içindedir.</flux:text>
-                <flux:button class="mt-4" icon="arrow-down-tray" :href="route('imports.template', $this->importType->slug())">Excel Şablonunu İndir</flux:button>
-            </div>
-
-            <form wire:submit="upload" class="rounded-xl border border-dashed border-zinc-300 p-6 dark:border-zinc-600">
-                <flux:heading>2. Doldurduğunuz dosyayı yükleyin</flux:heading>
-                <flux:text class="mt-1">.xlsx, .xls veya .csv — en fazla 10 MB.</flux:text>
-                <div class="mt-4 space-y-3">
-                    <input type="file" wire:model="file" accept=".xlsx,.xls,.csv"
-                        class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-3 file:py-2 file:text-white dark:file:bg-zinc-200 dark:file:text-zinc-900" />
-                    <flux:error name="file" />
-                    <div wire:loading wire:target="file" class="text-sm text-zinc-500">Dosya yükleniyor...</div>
-                    <flux:button type="submit" variant="primary" icon="magnifying-glass" wire:loading.attr="disabled" wire:target="file,upload">
-                        Yükle ve Kontrol Et
-                    </flux:button>
-                </div>
-            </form>
-        </div>
+        <x-import-upload :template-url="route('imports.template', $this->importType->slug())" />
     @else
-        @php($import = $this->import)
-
-        <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
-            <div class="flex flex-wrap gap-8">
-                <div><flux:text size="sm">Dosya</flux:text><div class="font-medium">{{ $import->original_filename }}</div></div>
-                <div><flux:text size="sm">Satır</flux:text><div class="text-2xl font-semibold">{{ $import->total_rows }}</div></div>
-                <div><flux:text size="sm">Hatasız</flux:text><div class="text-2xl font-semibold text-green-600">{{ $import->total_rows - $import->error_rows }}</div></div>
-                <div><flux:text size="sm">Hatalı</flux:text><div class="text-2xl font-semibold {{ $import->error_rows ? 'text-red-500' : '' }}">{{ $import->error_rows }}</div></div>
-            </div>
-            <div class="flex gap-2">
-                <flux:button icon="arrow-path" wire:click="startOver">Yeni Dosya Yükle</flux:button>
-                @if ($import->canBeConfirmed())
-                    <flux:button variant="primary" icon="check" wire:click="confirm"
-                        wire:confirm="{{ $import->total_rows }} kayıt oluşturulsun mu?">Onayla ve Oluştur</flux:button>
-                @endif
-            </div>
-        </div>
-
-        @if ($import->file_errors)
-            <flux:callout icon="x-circle" color="red" heading="Dosya okunamadı">
-                <flux:callout.text>
-                    <ul class="list-disc ps-5">
-                        @foreach ($import->file_errors as $error) <li>{{ $error }}</li> @endforeach
-                    </ul>
-                </flux:callout.text>
-            </flux:callout>
-        @elseif ($import->error_rows > 0)
-            <flux:callout icon="exclamation-triangle" color="amber" heading="{{ $import->error_rows }} satırda hata var"
-                text="Hataları Excel dosyanızda düzeltip dosyayı yeniden yükleyin. Hatalar giderilmeden kayıt oluşturulmaz." />
-        @else
-            <flux:callout icon="check-circle" color="green" heading="Tüm satırlar geçerli"
-                text="Kontrol edip onayladığınızda kayıtlar oluşturulacak." />
-        @endif
-
-        @if ($import->total_rows > 0)
-            <flux:checkbox wire:model.live="onlyErrors" label="Yalnızca hatalı satırları göster" />
-
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>Satır</flux:table.column>
-                    @foreach ($this->previewColumns as $header)
-                        <flux:table.column>{{ $header }}</flux:table.column>
-                    @endforeach
-                    <flux:table.column>Durum</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($import->rows as $row)
-                        @continue($onlyErrors && ! $row->hasErrors())
-                        <flux:table.row :key="$row->id">
-                            <flux:table.cell>{{ $row->row_number }}</flux:table.cell>
-                            @foreach (array_keys($this->previewColumns) as $key)
-                                <flux:table.cell>{{ $row->data[$key] ?? '' }}</flux:table.cell>
-                            @endforeach
-                            <flux:table.cell class="whitespace-normal">
-                                @if ($row->hasErrors())
-                                    <ul class="space-y-0.5 text-sm text-red-500">
-                                        @foreach (collect($row->errors)->flatten() as $message) <li>{{ $message }}</li> @endforeach
-                                    </ul>
-                                @else
-                                    <flux:badge size="sm" color="green" inset="top bottom">Geçerli</flux:badge>
-                                @endif
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        @endif
+        <x-import-preview :import="$this->import" :columns="$this->previewColumns" :only-errors="$onlyErrors" />
     @endif
 </div>

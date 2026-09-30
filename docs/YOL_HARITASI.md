@@ -48,7 +48,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Firma detayından müşteri kullanıcısı oluşturma / mevcut kullanıcıya yetki verme
 
 - ✅ Firma temel alanları: unvan, vergi no / dairesi, yetkili kişi, telefon, e-posta, adres
-- ⬜ Excel ile toplu firma oluşturma (şablon → yükle → önizleme → onay)
+- ✅ Excel ile toplu firma oluşturma (şablon → yükle → önizleme → onay)
 - ⬜ Firmalar arası yetki: A firması B firmasını yönetir (HRD veya B'nin yetkilisi tanımlar)
 
 ### 2.2 Kullanıcılar

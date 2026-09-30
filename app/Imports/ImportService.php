@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Actions\Companies\SaveCompany;
+use App\Actions\Firms\CreateFirm;
 use App\Actions\Workplaces\SaveWorkplace;
 use App\Enums\ImportStatus;
 use App\Enums\ImportType;
@@ -13,6 +14,7 @@ use App\Models\Firm;
 use App\Models\User;
 use App\Models\Workplace;
 use App\Validation\CompanyRules;
+use App\Validation\FirmRules;
 use App\Validation\WorkplaceInput;
 use App\Validation\WorkplaceRules;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class ImportService
     public function __construct(
         private SpreadsheetReader $reader,
         private RowMapper $mapper,
+        private CreateFirm $createFirm,
         private SaveCompany $saveCompany,
         private SaveWorkplace $saveWorkplace,
     ) {
@@ -41,9 +44,10 @@ class ImportService
     /**
      * Read and validate the file, storing a preview.
      */
-    public function preview(ImportType $type, Firm $firm, string $path, string $originalName, ?User $user = null): DataImport
+    public function preview(ImportType $type, ?Firm $firm, string $path, string $originalName, ?User $user = null): DataImport
     {
-        if (! $firm->isActive()) {
+        // Firm imports (admin) have no firm context; company/workplace imports need an active firm.
+        if ($type !== ImportType::Firm && ! $firm?->isActive()) {
             throw ValidationException::withMessages(['firm' => 'Toplu aktarım yalnızca aktif firmalar için yapılabilir.']);
         }
 
@@ -53,7 +57,7 @@ class ImportService
             $import = DataImport::create([
                 'type' => $type,
                 'status' => ImportStatus::Validated,
-                'firm_id' => $firm->id,
+                'firm_id' => $firm?->id,
                 'user_id' => $user?->id,
                 'original_filename' => $originalName,
                 'file_errors' => $parsed['errors'] ?: null,
@@ -99,7 +103,7 @@ class ImportService
 
         try {
             DB::transaction(function () use ($import, $user, &$failures) {
-                $firm = $import->firm()->lockForUpdate()->firstOrFail();
+                $firm = $import->type === ImportType::Firm ? null : $import->firm()->lockForUpdate()->firstOrFail();
 
                 foreach ($import->rows as $row) {
                     try {
@@ -152,8 +156,20 @@ class ImportService
     /**
      * @param  array<string, mixed>  $data
      */
-    private function create(ImportType $type, Firm $firm, array $data, ?User $user): Company|Workplace
+    private function create(ImportType $type, ?Firm $firm, array $data, ?User $user): Firm|Company|Workplace
     {
+        if ($type === ImportType::Firm) {
+            if ($user === null) {
+                throw ValidationException::withMessages(['import' => 'Firma aktarımı için kullanıcı gerekir.']);
+            }
+
+            return $this->createFirm->handle($user, $data);
+        }
+
+        if ($firm === null) {
+            throw ValidationException::withMessages(['firm' => 'Firma bulunamadı.']);
+        }
+
         if ($type === ImportType::Company) {
             return $this->saveCompany->create($firm, $data, $user);
         }
@@ -173,8 +189,19 @@ class ImportService
      * @param  array<string, mixed>  $data
      * @return array<string, list<string>>
      */
-    private function validate(ImportType $type, Firm $firm, array $data): array
+    private function validate(ImportType $type, ?Firm $firm, array $data): array
     {
+        if ($type === ImportType::Firm) {
+            $validator = Validator::make(FirmRules::clean($data), FirmRules::rules(), [], FirmRules::attributes());
+
+            /** @var array<string, list<string>> */
+            return $validator->errors()->toArray();
+        }
+
+        if ($firm === null) {
+            return ['firm' => ['Firma bulunamadı.']];
+        }
+
         if ($type === ImportType::Company) {
             $validator = Validator::make($data, CompanyRules::rules($data), [], CompanyRules::attributes());
 
@@ -202,12 +229,14 @@ class ImportService
      */
     private function duplicatesInFile(ImportType $type, array $data, int $rowNumber, array &$seen): array
     {
-        $keys = $type === ImportType::Company
-            ? ['company_no' => $data['company_no'] ?? null]
-            : [
+        $keys = match ($type) {
+            ImportType::Firm => ['tax_number' => $data['tax_number'] ?? null],
+            ImportType::Company => ['company_no' => $data['company_no'] ?? null],
+            ImportType::Workplace => [
                 'workplace_no' => isset($data['workplace_no']) ? ($data['company_no'] ?? '').'|'.$data['workplace_no'] : null,
                 'sgk_registry_no' => $data['sgk_registry_no'] ?? null,
-            ];
+            ],
+        };
 
         $errors = [];
 

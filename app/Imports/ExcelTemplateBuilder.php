@@ -30,7 +30,7 @@ class ExcelTemplateBuilder
         $spreadsheet = new Spreadsheet;
 
         $data = $spreadsheet->getActiveSheet();
-        $data->setTitle($type === ImportType::Company ? 'Şirketler' : 'İşyerleri');
+        $data->setTitle($type->sheetTitle());
 
         $lists = $spreadsheet->createSheet();
         $lists->setTitle('Listeler');
@@ -97,7 +97,7 @@ class ExcelTemplateBuilder
      */
     public static function filename(ImportType $type): string
     {
-        return $type === ImportType::Company ? 'HRD_Sirket_Sablonu.xlsx' : 'HRD_Isyeri_Sablonu.xlsx';
+        return $type->templateFilename();
     }
 
     private function addDropdown(Worksheet $sheet, string $range, string $source, Field $field): void

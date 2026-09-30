@@ -146,9 +146,12 @@ new #[Title('Firmalar')] class extends Component {
         </div>
 
         @can('create', \App\Models\Firm::class)
-            <flux:modal.trigger name="create-firm">
-                <flux:button variant="primary" icon="plus">Yeni Firma</flux:button>
-            </flux:modal.trigger>
+            <div class="flex gap-2">
+                <flux:button icon="table-cells" :href="route('admin.firms.import')" wire:navigate>Excel ile Aktar</flux:button>
+                <flux:modal.trigger name="create-firm">
+                    <flux:button variant="primary" icon="plus">Yeni Firma</flux:button>
+                </flux:modal.trigger>
+            </div>
         @endcan
     </div>
 

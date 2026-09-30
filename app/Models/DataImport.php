@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property ImportType $type
  * @property ImportStatus $status
- * @property int $firm_id
+ * @property int|null $firm_id
  * @property int|null $user_id
  * @property string $original_filename
  * @property list<string>|null $file_errors
@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Firm $firm
+ * @property-read Firm|null $firm
  * @property-read User|null $user
  * @property-read Collection<int, DataImportRow> $rows
  */

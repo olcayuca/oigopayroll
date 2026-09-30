@@ -32,7 +32,11 @@ class RowMapper
      */
     public function map(ImportType $type, array $row): array
     {
-        return $type === ImportType::Company ? $this->company($row) : $this->workplace($row);
+        return match ($type) {
+            ImportType::Firm => ['data' => $row, 'errors' => []],
+            ImportType::Company => $this->company($row),
+            ImportType::Workplace => $this->workplace($row),
+        };
     }
 
     /**

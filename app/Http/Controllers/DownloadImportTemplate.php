@@ -18,6 +18,7 @@ class DownloadImportTemplate extends Controller
     public function __invoke(Request $request, string $type, ExcelTemplateBuilder $builder): BinaryFileResponse
     {
         $importType = ImportType::fromSlug($type) ?? abort(404);
+        abort_if($importType === ImportType::Firm, 404);
         $firm = $request->user()?->activeFirm() ?? abort(403);
 
         Gate::authorize('import', [$importType === ImportType::Company ? Company::class : Workplace::class, $firm]);

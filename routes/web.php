@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,8 @@ Route::domain(config('portals.admin'))
         Route::livewire('/', 'pages::admin.dashboard')->name('dashboard');
 
         Route::livewire('firmalar', 'pages::admin.firms.index')->name('firms.index');
+        Route::livewire('firmalar/excel', 'pages::admin.firms.import')->name('firms.import');
+        Route::get('firmalar/excel/sablon', DownloadFirmTemplate::class)->name('firms.template');
         Route::livewire('firmalar/{firm}', 'pages::admin.firms.show')->name('firms.show');
 
         Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
