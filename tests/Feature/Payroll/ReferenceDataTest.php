@@ -13,9 +13,10 @@ class ReferenceDataTest extends PayrollTestCase
         /** @var array<string, list<array{code: int, name: string}>> $data */
         $data = json_decode((string) file_get_contents(database_path('data/districts.json')), true);
 
-        $this->assertSame(array_map('strval', array_keys(ReferenceDataSeeder::PROVINCES)), array_keys($data));
+        // JSON object keys "1".."81" decode to integer array keys.
+        $this->assertSame(array_keys(ReferenceDataSeeder::PROVINCES), array_keys($data));
         $this->assertSame(973, array_sum(array_map('count', $data)));
-        $this->assertCount(39, $data['34']);
+        $this->assertCount(39, $data[34]);
     }
 
     public function test_district_seeder_is_idempotent_and_matches_workplace_input(): void
