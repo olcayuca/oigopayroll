@@ -28,6 +28,12 @@
         <flux:sidebar.item icon="scale" :href="route('admin.parameters.index')" :current="request()->routeIs('admin.parameters.*')" wire:navigate>
             Yasal Parametreler
         </flux:sidebar.item>
+        <flux:sidebar.item icon="list-bullet" :href="route('admin.codes.index')" :current="request()->routeIs('admin.codes.*')" wire:navigate>
+            Bordro Kodları
+        </flux:sidebar.item>
+        <flux:sidebar.item icon="calendar-days" :href="route('admin.holidays.index')" :current="request()->routeIs('admin.holidays.*')" wire:navigate>
+            Çalışma Takvimi
+        </flux:sidebar.item>
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Sistem" class="grid">

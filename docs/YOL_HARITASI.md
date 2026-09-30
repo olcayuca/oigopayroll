@@ -77,8 +77,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 
 ### 2.6 Bordro tanımları
 - ✅ Yasal parametreler: yürürlük tarihli; 2026 değerleri kaynaklarıyla yüklendi (admin doğrulamalı)
-- ⬜ Bordro tanım listeleri (SGK belge türleri, eksik gün nedenleri, işten çıkış kodları, meslek kodları, teşvikler, bankalar)
-- ⬜ Çalışma takvimi (resmi tatiller, yarım günler)
+- ✅ Bordro kodları: belge türleri (45), eksik gün nedenleri, işten çıkış kodları, teşvik kanunları (7 doğrulanmış kod); meslek kodları ve bankalar Excel ile yüklenir
+- ✅ Çalışma takvimi: sabit tatiller her yıl otomatik, dini bayramlar 2026–2027 yüklendi, yarım günler
 - ⬜ KVKK modülü
 
 ### 2.5 Güvenlik

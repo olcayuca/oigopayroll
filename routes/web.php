@@ -35,6 +35,8 @@ Route::domain(config('portals.admin'))
         Route::livewire('web-sitesi', 'pages::admin.website.index')->name('website.index');
         Route::livewire('guvenlik', 'pages::admin.security.index')->name('security.index');
         Route::livewire('yasal-parametreler', 'pages::admin.parameters.index')->name('parameters.index');
+        Route::livewire('bordro-kodlari', 'pages::admin.codes.index')->name('codes.index');
+        Route::livewire('calisma-takvimi', 'pages::admin.holidays.index')->name('holidays.index');
     });
 
 // panel.siteadi.com: client firms
