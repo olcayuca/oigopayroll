@@ -24,6 +24,12 @@
         </flux:sidebar.item>
     </flux:sidebar.group>
 
+    <flux:sidebar.group heading="Bordro Tanımları" class="grid">
+        <flux:sidebar.item icon="scale" :href="route('admin.parameters.index')" :current="request()->routeIs('admin.parameters.*')" wire:navigate>
+            Yasal Parametreler
+        </flux:sidebar.item>
+    </flux:sidebar.group>
+
     <flux:sidebar.group heading="Sistem" class="grid">
         <flux:sidebar.item icon="globe-alt" :href="route('admin.website.index')" :current="request()->routeIs('admin.website.*')" wire:navigate>
             Web Sitesi

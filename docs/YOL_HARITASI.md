@@ -75,6 +75,12 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Genel ayarlar (site adı, iletişim bilgileri vb.)
 - ✅ İşyeri şifre görüntüleme logları
 
+### 2.6 Bordro tanımları
+- ✅ Yasal parametreler: yürürlük tarihli; 2026 değerleri kaynaklarıyla yüklendi (admin doğrulamalı)
+- ⬜ Bordro tanım listeleri (SGK belge türleri, eksik gün nedenleri, işten çıkış kodları, meslek kodları, teşvikler, bankalar)
+- ⬜ Çalışma takvimi (resmi tatiller, yarım günler)
+- ⬜ KVKK modülü
+
 ### 2.5 Güvenlik
 - ✅ Olay kayıtları (audit log): giriş/çıkış, firma, yetki, kullanıcı, ayar, aktarım, şifre görüntüleme işlemleri
 - ✅ Başarısız giriş kayıtları (e-posta, IP, tarayıcı, sebep) ve kilitlenmeler

@@ -55,6 +55,7 @@ enum AuditEvent: string
     // System
     case SystemSettingsChanged = 'system.settings_changed';
     case WebsiteChanged = 'system.website_changed';
+    case ParameterChanged = 'system.parameter_changed';
 
     /**
      * Get the Turkish display label.
@@ -97,6 +98,7 @@ enum AuditEvent: string
             self::ImportCompleted => 'Excel aktarımı tamamlandı',
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',
+            self::ParameterChanged => 'Yasal parametre değişti',
         };
     }
 

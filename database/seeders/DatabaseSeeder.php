@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ReferenceDataSeeder::class,
             DistrictSeeder::class,
             PermissionTemplateSeeder::class,
+            LegalParameterSeeder::class,
         ]);
 
         if (app()->isLocal() && ! User::where('email', 'admin@hrd.test')->exists()) {
