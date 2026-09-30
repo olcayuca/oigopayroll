@@ -56,6 +56,33 @@ class AccessGrant extends Model
     }
 
     /**
+     * Get the firm, company or workplace this grant applies to.
+     */
+    public function scopeModel(): Firm|Company|Workplace|null
+    {
+        return match ($this->scope_type) {
+            ScopeType::Firm => Firm::find($this->scope_id),
+            ScopeType::Company => Company::with('firm')->find($this->scope_id),
+            ScopeType::Workplace => Workplace::with('company.firm')->find($this->scope_id),
+        };
+    }
+
+    /**
+     * Human readable scope, e.g. "Demo Holding › Demo Teknoloji A.Ş. › Merkez".
+     */
+    public function scopeLabel(): string
+    {
+        $model = $this->scopeModel();
+
+        return match (true) {
+            $model instanceof Firm => $model->name,
+            $model instanceof Company => $model->firm->name.' › '.$model->title,
+            $model instanceof Workplace => $model->company->firm->name.' › '.$model->company->title.' › '.$model->branch_name,
+            default => '(silinmiş kayıt)',
+        };
+    }
+
+    /**
      * Get the combined permission values of this grant.
      *
      * @return list<string>

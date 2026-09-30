@@ -22,6 +22,10 @@ Route::domain(config('portals.admin'))
 
         Route::livewire('firmalar', 'pages::admin.firms.index')->name('firms.index');
         Route::livewire('firmalar/{firm}', 'pages::admin.firms.show')->name('firms.show');
+
+        Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
+        Route::livewire('kullanicilar/{user}', 'pages::admin.users.show')->name('users.show');
+        Route::livewire('yetki-sablonlari', 'pages::admin.permission-templates.index')->name('permission-templates.index');
     });
 
 // panel.siteadi.com: client firms

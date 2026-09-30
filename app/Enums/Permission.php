@@ -65,6 +65,23 @@ enum Permission: string
     }
 
     /**
+     * Permissions grouped by area, for pickers.
+     *
+     * @return array<string, list<self>>
+     */
+    public static function groups(): array
+    {
+        $groups = ['firm' => 'Firma', 'company' => 'Şirket', 'workplace' => 'İşyeri', 'payroll' => 'Bordro'];
+        $grouped = [];
+
+        foreach (self::cases() as $case) {
+            $grouped[$groups[explode('.', $case->value)[0]]][] = $case;
+        }
+
+        return $grouped;
+    }
+
+    /**
      * Permissions a client gets on a firm they registered themselves.
      *
      * @return list<self>

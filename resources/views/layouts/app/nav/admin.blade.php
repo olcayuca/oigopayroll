@@ -16,7 +16,12 @@
         >
             Firmalar
         </flux:sidebar.item>
-        <flux:sidebar.item icon="users" badge="Yakında">Kullanıcılar</flux:sidebar.item>
+        <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
+            Kullanıcılar
+        </flux:sidebar.item>
+        <flux:sidebar.item icon="shield-check" :href="route('admin.permission-templates.index')" :current="request()->routeIs('admin.permission-templates.*')" wire:navigate>
+            Yetki Şablonları
+        </flux:sidebar.item>
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Sistem" class="grid">
