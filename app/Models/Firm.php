@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\FirmSource;
+use App\Enums\FirmStatus;
+use App\Enums\ScopeType;
+use Database\Factories\FirmFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+
+/**
+ * Müşteri firma: the client account that owns one or more companies.
+ *
+ * Firm → Company → Workplace → (Employee)
+ *
+ * @property int $id
+ * @property string $name
+ * @property FirmStatus $status
+ * @property FirmSource $source
+ * @property int|null $created_by
+ * @property int|null $reviewed_by
+ * @property Carbon|null $reviewed_at
+ * @property string|null $rejection_reason
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, Company> $companies
+ * @property-read Collection<int, Workplace> $workplaces
+ * @property-read User|null $creator
+ * @property-read User|null $reviewer
+ */
+#[Fillable(['name', 'status', 'source', 'created_by', 'reviewed_by', 'reviewed_at', 'rejection_reason'])]
+class Firm extends Model
+{
+    /** @use HasFactory<FirmFactory> */
+    use HasFactory, SoftDeletes;
+
+    /**
+     * @return HasMany<Company, $this>
+     */
+    public function companies(): HasMany
+    {
+        return $this->hasMany(Company::class);
+    }
+
+    /**
+     * @return HasManyThrough<Workplace, Company, $this>
+     */
+    public function workplaces(): HasManyThrough
+    {
+        return $this->hasManyThrough(Workplace::class, Company::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * Determine if the firm may use the admin portal.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === FirmStatus::Active;
+    }
+
+    /**
+     * Scope to firms the user can see (through a grant on the firm or anything beneath it).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+
+        $firmIds = $user->grantedScopeIds(ScopeType::Firm);
+        $companyIds = $user->grantedScopeIds(ScopeType::Company);
+        $workplaceIds = $user->grantedScopeIds(ScopeType::Workplace);
+
+        $query->where(function (Builder $query) use ($firmIds, $companyIds, $workplaceIds) {
+            $query->whereIn('id', $firmIds)
+                ->orWhereIn('id', Company::query()->select('firm_id')->whereIn('id', $companyIds))
+                ->orWhereIn('id', Company::query()->select('firm_id')->whereIn(
+                    'id',
+                    Workplace::query()->select('company_id')->whereIn('id', $workplaceIds),
+                ));
+        });
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => FirmStatus::class,
+            'source' => FirmSource::class,
+            'reviewed_at' => 'datetime',
+        ];
+    }
+}
