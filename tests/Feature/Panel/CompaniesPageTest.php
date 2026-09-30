@@ -139,14 +139,24 @@ class CompaniesPageTest extends TestCase
 
     public function test_opening_another_visible_firms_company_switches_the_panel(): void
     {
+        // HRD staff work across firms; client users are bound to their own firm.
+        $specialist = User::factory()->payrollSpecialist()->create();
         $other = Firm::factory()->create();
-        app(GrantAccess::class)->handle($this->client, $other, [Permission::CompanyView]);
+        app(GrantAccess::class)->handle($specialist, $this->firm, [Permission::CompanyView]);
+        app(GrantAccess::class)->handle($specialist, $other, [Permission::CompanyView]);
         $company = Company::factory()->for($other)->create();
-        $this->client->switchFirm($this->firm);
+        $specialist->switchFirm($this->firm);
 
-        $this->get(route('companies.show', $company))->assertOk();
+        $this->actingAs($specialist)->get(route('companies.show', $company))->assertOk();
 
-        $this->assertSame($other->id, $this->client->refresh()->current_firm_id);
+        $this->assertSame($other->id, $specialist->refresh()->current_firm_id);
+    }
+
+    public function test_client_user_cannot_reach_a_firm_they_do_not_belong_to(): void
+    {
+        $company = Company::factory()->create();
+
+        $this->get(route('companies.show', $company))->assertForbidden();
     }
 
     public function test_template_download_and_excel_import_flow(): void

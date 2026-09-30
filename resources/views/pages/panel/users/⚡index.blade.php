@@ -61,7 +61,7 @@ new #[Title('Firma Kullanıcıları')] class extends PanelComponent {
                 ->where(fn ($q) => $q->where('scope_type', ScopeType::Firm)->where('scope_id', $this->firm->id))
                 ->orWhere(fn ($q) => $q->where('scope_type', ScopeType::Company)->whereIn('scope_id', $companyIds))
                 ->orWhere(fn ($q) => $q->where('scope_type', ScopeType::Workplace)->whereIn('scope_id', $workplaceIds)))
-            ->with(['user', 'template'])
+            ->with(['user.homeFirm', 'template'])
             ->get()
             ->sortBy(fn (AccessGrant $grant) => $grant->user->name)
             ->groupBy('user_id');
@@ -195,7 +195,7 @@ new #[Title('Firma Kullanıcıları')] class extends PanelComponent {
 
         $grant = $this->findGrant($grantId);
 
-        if ($grant->user->is(Auth::user()) || (! Auth::user()->isSuperAdmin() && ! $grant->user->type->isClient())) {
+        if (! $this->canEdit($grant)) {
             Flux::toast(variant: 'danger', text: 'Bu yetkiyi buradan kaldıramazsınız.');
 
             return;
@@ -208,6 +208,25 @@ new #[Title('Firma Kullanıcıları')] class extends PanelComponent {
 
         unset($this->grantsByUser);
         Flux::toast(variant: 'success', text: 'Yetki kaldırıldı.');
+    }
+
+    /**
+     * Only this firm's own client users are managed here; users assigned by managing
+     * firms are managed by their own firm (Firma Erişimleri), HRD staff by HRD.
+     */
+    public function canEdit(AccessGrant $grant): bool
+    {
+        $user = $grant->user;
+
+        if ($user->is(Auth::user())) {
+            return false;
+        }
+
+        if (Auth::user()->isSuperAdmin()) {
+            return true;
+        }
+
+        return $user->type->isClient() && $user->firm_id === $this->firm->id;
     }
 
     private function resolveScope(): Firm|Company|Workplace|null
@@ -252,12 +271,15 @@ new #[Title('Firma Kullanıcıları')] class extends PanelComponent {
         <flux:table.rows>
             @forelse ($this->grantsByUser as $grants)
                 @foreach ($grants as $grant)
-                    @php($editable = ! $grant->user->is(auth()->user()) && (auth()->user()->isSuperAdmin() || $grant->user->type->isClient()))
+                    @php($editable = $this->canEdit($grant))
                     <flux:table.row :key="$grant->id">
                         <flux:table.cell variant="strong">
                             @if ($loop->first)
                                 {{ $grant->user->name }}
                                 @unless ($grant->user->type->isClient()) <flux:badge size="sm" color="indigo" inset="top bottom">HRD</flux:badge> @endunless
+                                @if ($grant->user->type->isClient() && $grant->user->firm_id !== $this->firm->id)
+                                    <flux:badge size="sm" color="sky" inset="top bottom">{{ $grant->user->homeFirm?->name }} kullanıcısı</flux:badge>
+                                @endif
                                 @unless ($grant->user->is_active) <flux:badge size="sm" color="zinc" inset="top bottom">Pasif</flux:badge> @endunless
                                 <div class="text-xs font-normal text-zinc-500">{{ $grant->user->email }}</div>
                             @endif

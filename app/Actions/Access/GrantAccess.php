@@ -33,6 +33,8 @@ class GrantAccess
             throw ValidationException::withMessages(['permissions' => 'En az bir yetki veya bir yetki şablonu seçilmelidir.']);
         }
 
+        $this->ensureNoLeak($user, $scope);
+
         $grant = AccessGrant::updateOrCreate(
             [
                 'user_id' => $user->id,
@@ -63,6 +65,36 @@ class GrantAccess
             ->delete();
 
         $user->flushAccessCache();
+    }
+
+    /**
+     * A client user belongs to one firm: the first firm they get access to becomes their home firm,
+     * and afterwards they can only be given access inside it or inside firms it manages.
+     */
+    private function ensureNoLeak(User $user, Firm|Company|Workplace $scope): void
+    {
+        if (! $user->type->isClient()) {
+            return;
+        }
+
+        $firm = DelegatedGrantGuard::firmOf($scope);
+
+        if ($user->firm_id === null) {
+            $user->forceFill(['firm_id' => $firm->id])->save();
+            $user->flushAccessCache();
+
+            return;
+        }
+
+        $user->flushAccessCache();
+
+        if (! $user->mayWorkInFirm($firm->id)) {
+            $home = $user->homeFirm->name ?? 'başka bir firma';
+
+            throw ValidationException::withMessages([
+                'email' => "{$user->name} \"{$home}\" firmasına ait; yalnızca kendi firmasında veya firmasının yönettiği firmalarda yetkilendirilebilir.",
+            ]);
+        }
     }
 
     private static function scopeType(Firm|Company|Workplace $scope): ScopeType

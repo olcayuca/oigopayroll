@@ -25,6 +25,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $email
  * @property UserType $type
  * @property bool $is_active
+ * @property int|null $firm_id Home firm of a client user (not mass assignable).
  * @property int|null $current_firm_id
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -36,6 +37,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AccessGrant> $accessGrants
  * @property-read Firm|null $currentFirm
+ * @property-read Firm|null $homeFirm
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]

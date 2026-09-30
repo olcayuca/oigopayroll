@@ -13,6 +13,8 @@ use App\Models\Workplace;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -183,22 +185,31 @@ new #[Title('Kullanıcı')] class extends Component {
             ScopeType::Workplace => Workplace::findOrFail($this->workplaceId),
         };
 
-        // Moving an existing grant to another scope replaces it.
-        if ($this->editingGrantId !== null) {
-            $existing = $this->user->accessGrants()->find($this->editingGrantId);
+        try {
+            DB::transaction(function () use ($grantAccess, $scopeType, $scope) {
+                // Moving an existing grant to another scope replaces it.
+                if ($this->editingGrantId !== null) {
+                    $existing = $this->user->accessGrants()->find($this->editingGrantId);
 
-            if ($existing && ($existing->scope_type !== $scopeType || $existing->scope_id !== $scope->getKey())) {
-                $existing->delete();
-            }
+                    if ($existing && ($existing->scope_type !== $scopeType || $existing->scope_id !== $scope->getKey())) {
+                        $existing->delete();
+                    }
+                }
+
+                $grantAccess->handle(
+                    $this->user,
+                    $scope,
+                    $this->permissions,
+                    $this->templateId !== '' ? PermissionTemplate::find($this->templateId) : null,
+                    Auth::user(),
+                );
+            });
+        } catch (ValidationException $e) {
+            // e.g. a client user of another firm: shown in the modal, nothing changed.
+            $this->addError('grant', collect($e->errors())->flatten()->first());
+
+            return;
         }
-
-        $grantAccess->handle(
-            $this->user,
-            $scope,
-            $this->permissions,
-            $this->templateId !== '' ? PermissionTemplate::find($this->templateId) : null,
-            Auth::user(),
-        );
 
         unset($this->grants);
         Flux::modal('grant')->close();
@@ -236,7 +247,17 @@ new #[Title('Kullanıcı')] class extends Component {
                 <flux:heading size="xl">{{ $user->name }}</flux:heading>
                 <flux:badge :color="$user->is_active ? 'green' : 'zinc'">{{ $user->is_active ? 'Aktif' : 'Pasif' }}</flux:badge>
             </div>
-            <flux:text class="mt-1">{{ $user->type->label() }} · {{ $user->email }}</flux:text>
+            <flux:text class="mt-1">
+                {{ $user->type->label() }} · {{ $user->email }}
+                @if ($user->type->isClient())
+                    · Ait olduğu firma:
+                    @if ($user->homeFirm)
+                        <a href="{{ route('admin.firms.show', $user->homeFirm) }}" wire:navigate class="underline">{{ $user->homeFirm->name }}</a>
+                    @else
+                        henüz yok (ilk yetkiyle belirlenir)
+                    @endif
+                @endif
+            </flux:text>
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -358,6 +379,8 @@ new #[Title('Kullanıcı')] class extends Component {
             </div>
 
             <x-permission-picker />
+
+            @error('grant') <flux:callout icon="exclamation-triangle" color="red" :heading="$message" /> @enderror
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close><flux:button variant="filled">Vazgeç</flux:button></flux:modal.close>

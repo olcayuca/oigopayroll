@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * Firm → Company → Workplace → (Employee)
  *
  * @property int $id
+ * @property int|null $parent_firm_id
  * @property string $name
  * @property string|null $title
  * @property string|null $tax_number
@@ -46,7 +47,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $reviewer
  */
 #[Fillable([
-    'name', 'title', 'tax_number', 'tax_office', 'contact_name', 'phone', 'email', 'address',
+    'parent_firm_id', 'name', 'title', 'tax_number', 'tax_office', 'contact_name', 'phone', 'email', 'address',
     'status', 'source', 'created_by', 'reviewed_by', 'reviewed_at', 'rejection_reason',
 ])]
 class Firm extends Model
@@ -68,6 +69,34 @@ class Firm extends Model
     public function workplaces(): HasManyThrough
     {
         return $this->hasManyThrough(Workplace::class, Company::class);
+    }
+
+    /**
+     * The firm that opened this firm as a sub-firm.
+     *
+     * @return BelongsTo<Firm, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Firm::class, 'parent_firm_id');
+    }
+
+    /**
+     * @return HasMany<Firm, $this>
+     */
+    public function subFirms(): HasMany
+    {
+        return $this->hasMany(Firm::class, 'parent_firm_id');
+    }
+
+    /**
+     * Client users who belong to this firm.
+     *
+     * @return HasMany<User, $this>
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(User::class, 'firm_id');
     }
 
     /**

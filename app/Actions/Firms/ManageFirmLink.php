@@ -3,24 +3,38 @@
 namespace App\Actions\Firms;
 
 use App\Actions\Access\DelegatedGrantGuard;
+use App\Actions\Access\GrantAccess;
 use App\Enums\Permission;
+use App\Enums\ScopeType;
+use App\Models\AccessGrant;
+use App\Models\Company;
 use App\Models\Firm;
 use App\Models\FirmLink;
+use App\Models\PermissionTemplate;
 use App\Models\User;
+use App\Models\Workplace;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Let one firm manage another. Set up by HRD, or by an authorized user of the managed firm
- * ($delegated), who may only pass on permissions they hold on their own firm.
+ * Firm-to-firm management.
+ *
+ * A link says "the manager firm may work on the managed firm, up to these permissions".
+ * It grants nobody anything by itself: the manager firm then assigns its own users to the
+ * managed firm. Removing the link removes those assignments.
  */
 class ManageFirmLink
 {
-    public function __construct(private DelegatedGrantGuard $guard)
+    public function __construct(private DelegatedGrantGuard $guard, private GrantAccess $grantAccess)
     {
         //
     }
 
     /**
+     * Create or update a link. Set up by HRD, or ($delegated) by a member of the managed firm,
+     * who may only allow permissions they hold on their own firm.
+     *
      * @param  list<Permission|string>  $permissions
      */
     public function link(Firm $manager, Firm $managed, array $permissions, User $actor, bool $delegated = false): FirmLink
@@ -36,7 +50,7 @@ class ManageFirmLink
         }
 
         if ($delegated) {
-            $this->ensureDelegateMayManage($actor, $managed);
+            $this->ensureMemberMayManage($actor, $managed);
 
             $excess = array_diff($permissions, $this->guard->grantable($actor, $managed));
 
@@ -53,23 +67,82 @@ class ManageFirmLink
         );
     }
 
+    /**
+     * Remove a link together with the manager firm users' access to the managed firm.
+     */
     public function unlink(FirmLink $link, User $actor, bool $delegated = false): void
     {
         if ($delegated) {
-            $this->ensureDelegateMayManage($actor, $link->managed);
+            $this->ensureMemberMayManage($actor, $link->managed);
         }
 
-        $link->delete();
+        DB::transaction(function () use ($link) {
+            $this->assignmentsQuery($link)->delete();
+            $link->delete();
+        });
     }
 
-    private function ensureDelegateMayManage(User $actor, Firm $managed): void
+    /**
+     * A manager-firm user assigns one of their firm's users to (part of) the managed firm.
+     *
+     * @param  list<Permission|string>  $permissions
+     */
+    public function assign(
+        FirmLink $link,
+        User $user,
+        Firm|Company|Workplace $scope,
+        array $permissions,
+        ?PermissionTemplate $template,
+        User $actor,
+    ): AccessGrant {
+        $this->guard->assertCanAssignThroughLink($actor, $link, $scope, $user, Permission::sanitize($permissions), $template);
+
+        return $this->grantAccess->handle($user, $scope, $permissions, $template, $actor);
+    }
+
+    public function unassign(FirmLink $link, AccessGrant $grant, User $actor): void
     {
-        if (! $actor->can('manageUsers', $managed)) {
-            throw ValidationException::withMessages(['manager' => 'Bu firmanın erişimlerini yönetme yetkiniz yok.']);
+        if (! $actor->isSuperAdmin()
+            && ($actor->firm_id !== $link->manager_firm_id || ! $actor->can('manageUsers', $link->manager))) {
+            throw ValidationException::withMessages(['link' => 'Bu firmadaki atamaları yönetme yetkiniz yok.']);
         }
 
-        // Access that arrives through another firm may not be passed on again.
-        if (! $actor->isSuperAdmin() && ! $actor->accessGrants()->where('scope_type', 'firm')->where('scope_id', $managed->id)->exists()) {
+        if (! $this->assignmentsQuery($link)->whereKey($grant->id)->exists()) {
+            throw ValidationException::withMessages(['link' => 'Atama bulunamadı.']);
+        }
+
+        $grant->delete();
+        $grant->user->flushAccessCache();
+    }
+
+    /**
+     * Grants that users of the manager firm hold inside the managed firm.
+     *
+     * @return Builder<AccessGrant>
+     */
+    public function assignmentsQuery(FirmLink $link): Builder
+    {
+        $companyIds = Company::withTrashed()->where('firm_id', $link->managed_firm_id)->pluck('id');
+        $workplaceIds = Workplace::withTrashed()->whereIn('company_id', $companyIds)->pluck('id');
+
+        return AccessGrant::query()
+            ->whereIn('user_id', User::where('firm_id', $link->manager_firm_id)->select('id'))
+            ->where(fn ($query) => $query
+                ->where(fn ($q) => $q->where('scope_type', ScopeType::Firm)->where('scope_id', $link->managed_firm_id))
+                ->orWhere(fn ($q) => $q->where('scope_type', ScopeType::Company)->whereIn('scope_id', $companyIds))
+                ->orWhere(fn ($q) => $q->where('scope_type', ScopeType::Workplace)->whereIn('scope_id', $workplaceIds)));
+    }
+
+    /**
+     * Only the managed firm's own members (or HRD) decide who may manage it.
+     */
+    private function ensureMemberMayManage(User $actor, Firm $managed): void
+    {
+        if ($actor->isSuperAdmin()) {
+            return;
+        }
+
+        if ($actor->firm_id !== $managed->id || ! $actor->can('manageUsers', $managed)) {
             throw ValidationException::withMessages(['manager' => 'Firma erişimlerini yalnızca firmanın kendi yetkilileri yönetebilir.']);
         }
     }

@@ -5,6 +5,7 @@ namespace App\Actions\Access;
 use App\Enums\Permission;
 use App\Models\Company;
 use App\Models\Firm;
+use App\Models\FirmLink;
 use App\Models\PermissionTemplate;
 use App\Models\User;
 use App\Models\Workplace;
@@ -65,13 +66,76 @@ class DelegatedGrantGuard
             throw ValidationException::withMessages(['email' => 'HRD personelinin yetkileri yalnızca HRD tarafından yönetilir.']);
         }
 
-        $requested = Permission::sanitize([...$permissions, ...($template->permissions ?? [])]);
-        $excess = array_diff($requested, $this->grantable($actor, $scope));
+        // A firm manages only its own members here (users of managing firms are assigned by that firm).
+        if ($target->firm_id !== null && $target->firm_id !== $firm->id) {
+            throw ValidationException::withMessages(['email' => 'Bu kullanıcı başka bir firmaya ait; buradan yetkilendirilemez.']);
+        }
+
+        $this->ensureWithin(Permission::sanitize([...$permissions, ...($template->permissions ?? [])]), $this->grantable($actor, $scope));
+    }
+
+    /**
+     * Permissions a manager-firm user may hand to members of their own firm on the managed firm.
+     *
+     * @return list<string>
+     */
+    public function grantableThroughLink(User $actor, FirmLink $link): array
+    {
+        if ($actor->isSuperAdmin()) {
+            return $link->permissions;
+        }
+
+        return array_values(array_intersect($link->permissions, $this->grantable($actor, $link->manager)));
+    }
+
+    /**
+     * A managing firm assigns one of its own users to a firm it manages.
+     *
+     * @param  list<string>  $permissions
+     */
+    public function assertCanAssignThroughLink(
+        User $actor,
+        FirmLink $link,
+        Firm|Company|Workplace $scope,
+        User $target,
+        array $permissions,
+        ?PermissionTemplate $template,
+    ): void {
+        if (! $link->manager->isActive()) {
+            throw ValidationException::withMessages(['link' => 'Yönetici firma aktif değil.']);
+        }
+
+        if (self::firmOf($scope)->isNot($link->managed)) {
+            throw ValidationException::withMessages(['scope' => 'Yetki yalnızca yönetilen firmanın kayıtlarında verilebilir.']);
+        }
+
+        if (! $actor->isSuperAdmin()
+            && ($actor->firm_id !== $link->manager_firm_id || ! $actor->can('manageUsers', $link->manager))) {
+            throw ValidationException::withMessages(['link' => 'Bu firmaya kullanıcı atama yetkiniz yok.']);
+        }
+
+        if (! $target->type->isClient() || $target->firm_id !== $link->manager_firm_id) {
+            throw ValidationException::withMessages(['user' => 'Yalnızca yönetici firmaya ait kullanıcılar atanabilir.']);
+        }
+
+        $this->ensureWithin(
+            Permission::sanitize([...$permissions, ...($template->permissions ?? [])]),
+            $this->grantableThroughLink($actor, $link),
+        );
+    }
+
+    /**
+     * @param  list<string>  $requested
+     * @param  list<string>  $allowed
+     */
+    private function ensureWithin(array $requested, array $allowed): void
+    {
+        $excess = array_diff($requested, $allowed);
 
         if ($excess !== []) {
             $labels = implode(', ', array_map(fn ($p) => Permission::from($p)->label(), $excess));
 
-            throw ValidationException::withMessages(['permissions' => "Sahip olmadığınız yetkiler verilemez: {$labels}."]);
+            throw ValidationException::withMessages(['permissions' => "Bu yetkiler verilemez: {$labels}."]);
         }
     }
 

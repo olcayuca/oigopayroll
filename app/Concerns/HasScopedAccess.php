@@ -12,14 +12,18 @@ use App\Models\Firm;
 use App\Models\FirmLink;
 use App\Models\Workplace;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Firm / company / workplace scoped permissions for admin portal users.
+ * Firm / company / workplace scoped permissions.
  *
- * A grant on a firm covers all of its companies and workplaces; a grant on a
- * company covers its workplaces. Firm links extend a firm-level grant to the
- * firms that firm manages. HRD Super Admins bypass grants entirely.
+ * A grant on a firm covers all of its companies and workplaces; a grant on a company covers
+ * its workplaces. HRD Super Admins bypass grants entirely.
+ *
+ * Client users belong to one home firm. Their grants only count inside the home firm, or
+ * inside a firm the home firm manages through an active FirmLink — and there only for the
+ * permissions that link allows. Anything else is ignored, so access can never leak.
  */
 trait HasScopedAccess
 {
@@ -29,9 +33,11 @@ trait HasScopedAccess
     protected ?Collection $resolvedGrants = null;
 
     /**
-     * @var Collection<int, FirmLink>|null
+     * Permissions allowed per managed firm id, for links from the home firm.
+     *
+     * @var array<int, list<string>>|null
      */
-    protected ?Collection $resolvedLinks = null;
+    protected ?array $resolvedLinkPermissions = null;
 
     /**
      * @return HasMany<AccessGrant, $this>
@@ -39,6 +45,16 @@ trait HasScopedAccess
     public function accessGrants(): HasMany
     {
         return $this->hasMany(AccessGrant::class);
+    }
+
+    /**
+     * The firm a client user belongs to.
+     *
+     * @return BelongsTo<Firm, $this>
+     */
+    public function homeFirm(): BelongsTo
+    {
+        return $this->belongsTo(Firm::class, 'firm_id');
     }
 
     public function isSuperAdmin(): bool
@@ -67,22 +83,11 @@ trait HasScopedAccess
             return true;
         }
 
-        if ($this->grantsCovering($target)->contains(fn (AccessGrant $grant) => $grant->allows($permission))) {
-            return true;
-        }
-
-        // Via firm links: the link must allow it AND the user must hold it firm-wide on the manager firm.
-        $firmId = self::firmIdOf($target);
-
-        return $this->resolvedLinks()->contains(fn (FirmLink $link) => $link->managed_firm_id === $firmId
-            && $link->allows($permission)
-            && $this->resolvedGrants()->contains(fn (AccessGrant $grant) => $grant->scope_type === ScopeType::Firm
-                && $grant->scope_id === $link->manager_firm_id
-                && $grant->allows($permission)));
+        return $this->grantsCovering($target)->contains(fn (AccessGrant $grant) => $this->grantAllows($grant, $permission));
     }
 
     /**
-     * Determine if the user has any grant on the target, its parents or its children.
+     * Determine if the user has any effective grant on the target, its parents or its children.
      */
     public function canSee(Firm|Company|Workplace $target): bool
     {
@@ -98,8 +103,7 @@ trait HasScopedAccess
     }
 
     /**
-     * Get the ids the user can reach at the given level: direct grants, plus (for firms)
-     * the firms managed by firms the user has a firm-level grant on.
+     * Get the ids of the user's effective grants at the given level.
      *
      * @return list<int>
      */
@@ -109,55 +113,54 @@ trait HasScopedAccess
             return [];
         }
 
-        $ids = $this->directScopeIds($type);
-
-        if ($type === ScopeType::Firm) {
-            $ids = [...$ids, ...$this->resolvedLinks()->pluck('managed_firm_id')->all()];
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    /**
-     * Forget the cached grants and firm links after they change.
-     */
-    public function flushAccessCache(): void
-    {
-        $this->resolvedGrants = null;
-        $this->resolvedLinks = null;
-    }
-
-    /**
-     * @return list<int>
-     */
-    protected function directScopeIds(ScopeType $type): array
-    {
-        return array_values($this->resolvedGrants()
+        return array_values($this->effectiveGrants()
             ->filter(fn (AccessGrant $grant) => $grant->scope_type === $type)
             ->map(fn (AccessGrant $grant) => $grant->scope_id)
             ->all());
     }
 
     /**
-     * Links from active firms the user holds a firm-level grant on (not transitive).
+     * Firms the user's home firm manages (active links), with the permissions each link allows.
      *
-     * @return Collection<int, FirmLink>
+     * @return array<int, list<string>>
      */
-    protected function resolvedLinks(): Collection
+    public function managedFirmPermissions(): array
     {
-        return $this->resolvedLinks ??= FirmLink::query()
-            ->whereIn('manager_firm_id', $this->directScopeIds(ScopeType::Firm))
+        if ($this->resolvedLinkPermissions !== null) {
+            return $this->resolvedLinkPermissions;
+        }
+
+        if ($this->firm_id === null) {
+            return $this->resolvedLinkPermissions = [];
+        }
+
+        return $this->resolvedLinkPermissions = FirmLink::query()
+            ->where('manager_firm_id', $this->firm_id)
             ->whereHas('manager', fn ($query) => $query->where('status', FirmStatus::Active))
-            ->get();
+            ->get()
+            ->mapWithKeys(fn (FirmLink $link) => [$link->managed_firm_id => $link->permissions])
+            ->all();
     }
 
-    private static function firmIdOf(Firm|Company|Workplace $target): int
+    /**
+     * Determine whether a grant in the given firm can apply to this user at all.
+     */
+    public function mayWorkInFirm(int $firmId): bool
     {
-        return match (true) {
-            $target instanceof Workplace => $target->company->firm_id,
-            $target instanceof Company => $target->firm_id,
-            default => $target->id,
-        };
+        if (! $this->type->isClient()) {
+            return true;
+        }
+
+        return $firmId === $this->firm_id || array_key_exists($firmId, $this->managedFirmPermissions());
+    }
+
+    /**
+     * Forget cached grants and links after they change.
+     */
+    public function flushAccessCache(): void
+    {
+        $this->resolvedGrants = null;
+        $this->resolvedLinkPermissions = null;
     }
 
     /**
@@ -182,9 +185,33 @@ trait HasScopedAccess
             ],
         };
 
-        return $this->resolvedGrants()->filter(
+        return $this->effectiveGrants()->filter(
             fn (AccessGrant $grant) => ($chain[$grant->scope_type->value] ?? null) === $grant->scope_id,
         );
+    }
+
+    /**
+     * Grants that may apply: for client users only those in the home firm or a managed firm.
+     *
+     * @return Collection<int, AccessGrant>
+     */
+    protected function effectiveGrants(): Collection
+    {
+        return $this->resolvedGrants()->filter(fn (AccessGrant $grant) => $this->mayWorkInFirm($grant->firmId()));
+    }
+
+    protected function grantAllows(AccessGrant $grant, Permission $permission): bool
+    {
+        if (! $grant->allows($permission)) {
+            return false;
+        }
+
+        // In a managed firm, the link caps what the grant may do.
+        if ($this->type->isClient() && $grant->firmId() !== $this->firm_id) {
+            return in_array($permission->value, $this->managedFirmPermissions()[$grant->firmId()] ?? [], true);
+        }
+
+        return true;
     }
 
     /**
@@ -192,6 +219,6 @@ trait HasScopedAccess
      */
     protected function resolvedGrants(): Collection
     {
-        return $this->resolvedGrants ??= $this->accessGrants()->with('template')->get();
+        return $this->resolvedGrants ??= AccessGrant::withFirmIds($this->accessGrants()->with('template')->get());
     }
 }

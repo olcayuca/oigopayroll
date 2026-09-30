@@ -15,6 +15,7 @@ enum Permission: string
     case FirmView = 'firm.view';
     case FirmUpdate = 'firm.update';
     case FirmManageUsers = 'firm.manage_users';
+    case FirmCreateSubfirm = 'firm.create_subfirm';
 
     case CompanyView = 'company.view';
     case CompanyCreate = 'company.create';
@@ -44,7 +45,8 @@ enum Permission: string
         return match ($this) {
             self::FirmView => 'Firma görüntüleme',
             self::FirmUpdate => 'Firma düzenleme',
-            self::FirmManageUsers => 'Firma kullanıcılarını yönetme',
+            self::FirmManageUsers => 'Firma kullanıcılarını ve erişimlerini yönetme',
+            self::FirmCreateSubfirm => 'Alt firma oluşturma',
             self::CompanyView => 'Şirket görüntüleme',
             self::CompanyCreate => 'Şirket oluşturma',
             self::CompanyUpdate => 'Şirket düzenleme',

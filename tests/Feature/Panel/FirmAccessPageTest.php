@@ -5,7 +5,7 @@ namespace Tests\Feature\Panel;
 use App\Actions\Access\GrantAccess;
 use App\Enums\Permission;
 use App\Enums\Portal;
-use App\Models\Company;
+use App\Models\AccessGrant;
 use App\Models\Firm;
 use App\Models\FirmLink;
 use App\Models\User;
@@ -25,6 +25,8 @@ class FirmAccessPageTest extends TestCase
 
     private User $clientOwner;
 
+    private User $accountingBoss;
+
     private User $accountant;
 
     protected function setUp(): void
@@ -38,88 +40,133 @@ class FirmAccessPageTest extends TestCase
         $this->clientOwner = User::factory()->create();
         app(GrantAccess::class)->handle($this->clientOwner, $this->client, Permission::firmOwnerDefaults());
 
-        $this->accountant = User::factory()->create();
-        app(GrantAccess::class)->handle($this->accountant, $this->accounting, Permission::firmOwnerDefaults());
+        $this->accountingBoss = User::factory()->create(['name' => 'Muhasebe Müdürü']);
+        app(GrantAccess::class)->handle($this->accountingBoss, $this->accounting, Permission::firmOwnerDefaults());
+
+        $this->accountant = User::factory()->create(['name' => 'Muhasebeci Ayşe']);
+        app(GrantAccess::class)->handle($this->accountant, $this->accounting, [Permission::CompanyView]);
     }
 
-    public function test_client_owner_lets_accounting_firm_manage_them_and_accountant_works_on_both(): void
+    public function test_full_flow_manage_my_firm_then_assign_own_users(): void
     {
+        // 1. The client firm lets the accounting firm manage it.
         $this->actingAs($this->clientOwner);
         $this->get(route('firm-access.index'))->assertOk();
 
         Livewire::test('pages::panel.firm-access.index')
             ->call('newLink')
             ->set('taxNumber', '1111111111')
-            ->call('save')
+            ->call('saveLink')
             ->assertHasErrors('taxNumber')
             ->set('taxNumber', $this->accounting->tax_number)
             ->set('permissions', ['company.view', 'company.create'])
-            ->call('save')
+            ->call('saveLink')
             ->assertHasNoErrors()
             ->assertSee('Muhasebe A.Ş.');
 
-        // The accountant now sees both firms in the switcher and can add a company to the client firm.
-        $this->actingAs($this->accountant);
+        // 2. The link alone gives nobody access.
+        $this->assertFalse($this->accountant->fresh()->canSee($this->client));
 
+        // 3. The accounting firm assigns its own accountant, within the link.
+        $this->actingAs($this->accountingBoss);
+        $this->accountingBoss->switchFirm($this->accounting);
+        $link = FirmLink::sole();
+
+        Livewire::test('pages::panel.firm-access.index')
+            ->assertSee('Müşteri Ltd.')
+            ->call('newAssignment', $link->id)
+            ->set('assignUserId', (string) $this->accountant->id)
+            ->set('permissions', ['company.view', 'company.delete'])
+            ->call('saveAssignment')
+            ->assertHasErrors('permissions')
+            ->set('permissions', ['company.view', 'company.create'])
+            ->call('saveAssignment')
+            ->assertHasNoErrors()
+            ->assertSee('Muhasebeci Ayşe');
+
+        // 4. The accountant works on the client firm.
+        $this->actingAs($this->accountant);
         Livewire::test('firm-switcher')->assertSee('Muhasebe A.Ş.')->assertSee('Müşteri Ltd.');
         $this->accountant->switchFirm($this->client);
-
         $this->get(route('companies.create'))->assertOk();
-        $this->get(route('users.index'))->assertForbidden(); // manage_users was not passed on
-        $this->assertFalse($this->accountant->fresh()->hasPermissionOn(Permission::CompanyDelete, $this->client));
 
-        // Owner revokes; the accountant loses access.
+        // 5. The client sees the accountant as a (read-only) user of the accounting firm.
         $this->actingAs($this->clientOwner);
-        Livewire::test('pages::panel.firm-access.index')->call('remove', FirmLink::sole()->id);
+        $page = Livewire::test('pages::panel.users.index')->assertSee('Muhasebe A.Ş. kullanıcısı');
+        $foreignGrant = AccessGrant::where('user_id', $this->accountant->id)->where('scope_id', $this->client->id)->sole();
+        $page->call('removeGrant', $foreignGrant->id);
+        $this->assertModelExists($foreignGrant);
+
+        // 6. Revoking the link removes the accountant's access too.
+        Livewire::test('pages::panel.firm-access.index')->call('removeLink', $link->id);
+        $this->assertModelMissing($foreignGrant);
+        $this->assertFalse($this->accountant->fresh()->canSee($this->client));
+    }
+
+    public function test_sub_firm_created_from_the_panel(): void
+    {
+        $this->actingAs($this->accountingBoss);
+        $this->accountingBoss->switchFirm($this->accounting);
+
+        Livewire::test('pages::panel.firm-access.index')
+            ->set('firmForm', ['name' => ''])
+            ->call('createSubFirm')
+            ->assertHasErrors('firmForm.name')
+            ->set('firmForm', ['name' => 'Muhasebe Şube'])
+            ->call('createSubFirm')
+            ->assertHasNoErrors()
+            ->assertSee('Muhasebe Şube')
+            ->assertSee('Alt firma');
+
+        $sub = Firm::where('name', 'Muhasebe Şube')->firstOrFail();
+        $this->assertSame($this->accounting->id, $sub->parent_firm_id);
+        $this->assertTrue($this->accountingBoss->fresh()->canSee($sub));
+    }
+
+    public function test_client_users_cannot_be_added_to_another_firm(): void
+    {
+        $this->actingAs($this->clientOwner);
+
+        Livewire::test('pages::panel.users.index')
+            ->set('email', $this->accountant->email)
+            ->set('permissions', ['company.view'])
+            ->call('save')
+            ->assertHasErrors('email');
 
         $this->assertFalse($this->accountant->fresh()->canSee($this->client));
     }
 
-    public function test_accounting_firm_page_lists_managed_firms(): void
-    {
-        FirmLink::create(['manager_firm_id' => $this->accounting->id, 'managed_firm_id' => $this->client->id, 'permissions' => ['company.view']]);
-
-        $this->actingAs($this->accountant);
-        $this->accountant->switchFirm($this->accounting);
-
-        $this->get(route('firm-access.index'))->assertOk()->assertSee('Firmamızın yönettiği firmalar')->assertSee('Müşteri Ltd.');
-    }
-
-    public function test_admin_links_firms_in_both_directions(): void
+    public function test_admin_links_firms_and_cannot_leak_users(): void
     {
         $this->onPortal(Portal::Admin);
         $this->actingAs(User::factory()->superAdmin()->create());
-
-        $this->get(route('admin.firms.show', $this->client))->assertOk()->assertSee('Firmalar Arası Yetki');
 
         Livewire::test('pages::admin.firms.show', ['firm' => $this->client])
             ->call('newLink', 'manager')
             ->set('linkFirmId', (string) $this->accounting->id)
             ->set('templateId', '')
-            ->set('permissions', ['company.view', 'workplace.view'])
+            ->set('permissions', ['company.view'])
             ->call('saveLink')
             ->assertHasNoErrors();
 
-        $link = FirmLink::sole();
-        $this->assertSame($this->accounting->id, $link->manager_firm_id);
-        $this->assertSame($this->client->id, $link->managed_firm_id);
+        $this->assertSame($this->accounting->id, FirmLink::sole()->manager_firm_id);
 
-        Livewire::test('pages::admin.firms.show', ['firm' => $this->accounting])
-            ->assertSee('Müşteri Ltd.')
-            ->call('editLink', $link->id)
-            ->assertSet('linkDirection', 'managed')
+        // A client user of a third firm cannot be granted on the client firm, even by an admin.
+        $other = User::factory()->create();
+        app(GrantAccess::class)->handle($other, Firm::factory()->create(), [Permission::CompanyView]);
+
+        Livewire::test('pages::admin.users.show', ['user' => $other])
+            ->call('newGrant')
+            ->set('firmId', (string) $this->client->id)
             ->set('permissions', ['company.view'])
-            ->call('saveLink')
-            ->call('removeLink', $link->id);
+            ->call('saveGrant')
+            ->assertHasErrors('grant');
 
-        $this->assertSame(0, FirmLink::count());
+        $this->assertFalse($other->fresh()->canSee($this->client));
     }
 
     public function test_users_without_manage_permission_cannot_open_firm_access(): void
     {
-        $viewer = User::factory()->create();
-        app(GrantAccess::class)->handle($viewer, $this->client, [Permission::CompanyView]);
-
-        $this->actingAs($viewer)->get(route('firm-access.index'))->assertForbidden();
+        $this->actingAs($this->accountant)->get(route('firm-access.index'))->assertForbidden();
     }
 }

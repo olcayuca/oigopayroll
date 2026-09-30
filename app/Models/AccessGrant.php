@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Permission;
 use App\Enums\ScopeType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -53,6 +54,50 @@ class AccessGrant extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(PermissionTemplate::class, 'permission_template_id');
+    }
+
+    /**
+     * Firm the scope belongs to (0 if the scope no longer exists). Filled in bulk by withFirmIds().
+     */
+    public ?int $resolvedFirmId = null;
+
+    /**
+     * Resolve the firm of each grant's scope with two queries instead of one per grant.
+     *
+     * @param  Collection<int, AccessGrant>  $grants
+     * @return Collection<int, AccessGrant>
+     */
+    public static function withFirmIds(Collection $grants): Collection
+    {
+        $idsOf = fn (ScopeType $type) => $grants->where('scope_type', $type)->pluck('scope_id')->all();
+
+        $companyFirms = Company::withTrashed()->whereIn('id', $idsOf(ScopeType::Company))->pluck('firm_id', 'id');
+        $workplaceFirms = Workplace::withTrashed()
+            ->join('companies', 'companies.id', '=', 'workplaces.company_id')
+            ->whereIn('workplaces.id', $idsOf(ScopeType::Workplace))
+            ->pluck('companies.firm_id', 'workplaces.id');
+
+        foreach ($grants as $grant) {
+            $grant->resolvedFirmId = (int) match ($grant->scope_type) {
+                ScopeType::Firm => $grant->scope_id,
+                ScopeType::Company => $companyFirms[$grant->scope_id] ?? 0,
+                ScopeType::Workplace => $workplaceFirms[$grant->scope_id] ?? 0,
+            };
+        }
+
+        return $grants;
+    }
+
+    public function firmId(): int
+    {
+        return $this->resolvedFirmId ??= (int) match ($this->scope_type) {
+            ScopeType::Firm => $this->scope_id,
+            ScopeType::Company => Company::withTrashed()->whereKey($this->scope_id)->value('firm_id') ?? 0,
+            ScopeType::Workplace => Workplace::withTrashed()
+                ->join('companies', 'companies.id', '=', 'workplaces.company_id')
+                ->where('workplaces.id', $this->scope_id)
+                ->value('companies.firm_id') ?? 0,
+        };
     }
 
     /**

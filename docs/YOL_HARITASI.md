@@ -16,7 +16,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - Yetki: kullanıcı + kapsam (firma/şirket/işyeri) + işlem; yetki şablonları opsiyonel
 - Risk Sınıfı: yönetilebilir seçim listesi
 - Excel şablonlarını sistem üretir
-- Firmalar arası yetki: bir firma (ör. muhasebe/holding) başka firmaları da yönetebilir; A'nın kullanıcıları, A'daki yetkileri ile bağlantıda izin verilen yetkilerin kesişimi kadar B'de işlem yapar. Bağlantıyı HRD veya B firmasının yetkilisi kurar/kaldırır.
+- Kullanıcı aidiyeti: her müşteri kullanıcısı tek bir firmaya (ana firma) aittir ve yalnızca o firmanın işlerini yapar.
+- Firmalar arası yetki: bir firma başka firmaları yönetebilir (alt firma açarak veya "işlerimi yönet" daveti ile). Bağlantı kendiliğinden kimseye erişim vermez; yönetici firma kendi kullanıcılarını yönettiği firmaya tek tek atar. Atanan kullanıcının yetkisi, bağlantıda izin verilen yetkilerle sınırlıdır. Bağlantı kaldırılınca bu atamalar da silinir.
 - Veritabanı MySQL, arayüz Flux + Livewire, dil Türkçe
 
 ---
@@ -50,6 +51,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Firma temel alanları: unvan, vergi no / dairesi, yetkili kişi, telefon, e-posta, adres
 - ✅ Excel ile toplu firma oluşturma (şablon → yükle → önizleme → onay)
 - ✅ Firmalar arası yetki: A firması B firmasını yönetir (admin: iki yönde; panel: B'nin yetkilisi A'yı vergi no ile ekler)
+
+- ✅ Kullanıcı–firma aidiyeti: her müşteri kullanıcısı tek bir firmaya aittir; başka firmaya sızma yok
+- ✅ Yönetici firma, yönettiği firmaya kendi kullanıcılarını tek tek atar (bağlantı yetkileriyle sınırlı)
+- ✅ Alt firma: firma kendi altında firma açar, otomatik yönetim bağlantısı kurulur (HRD onayına düşer)
 
 ### 2.2 Kullanıcılar
 - ✅ Liste (tip, durum, arama filtreleri)
