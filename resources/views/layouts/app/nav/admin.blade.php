@@ -49,6 +49,9 @@
         <flux:sidebar.item icon="globe-alt" :href="route('admin.website.index')" :current="request()->routeIs('admin.website.*')" wire:navigate>
             Web Sitesi
         </flux:sidebar.item>
+        <flux:sidebar.item icon="trash" :href="route('admin.trash.index')" :current="request()->routeIs('admin.trash.*')" wire:navigate>
+            Çöp Kutusu
+        </flux:sidebar.item>
         <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
             Sistem Ayarları
         </flux:sidebar.item>

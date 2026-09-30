@@ -67,6 +67,9 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Uzman dağılımı (Admin → Uzman Dağılımı): firmaya sorumlu bordro uzmanı; atama "Bordro Uzmanı" yetkisini otomatik verir,
   değişince eski uzmanın firma yetkisi kalkar; uzman iş yükü (firma/şirket/işyeri), sorumlusuz firma uyarısı, toplu devir;
   müşteri panelde sorumlu uzmanını görür
+- ✅ Çöp kutusu (panel + admin): silinen şirket/işyerleri, kimin ne zaman sildiği; geri alma (silme yetkisiyle, hiyerarşi sırasıyla);
+  kalıcı silme yalnızca admin'de (önce işyerleri, yetkiler temizlenir, işlem kaydı kalır)
+  - ⬜ Çalışan/bordro verisi gelince: kalıcı silme bağlı kayıt varken engellenecek, yasal saklama süreleri uygulanacak
 
 ### 2.3 Web Sitesi (landing içeriği)
 - ✅ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir

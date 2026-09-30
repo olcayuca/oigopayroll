@@ -49,6 +49,16 @@ class WorkplacePolicy
         return $workplace->company->firm->isActive() && $user->hasPermissionOn(Permission::WorkplaceDelete, $workplace);
     }
 
+    /**
+     * Restore from the trash: same right as deleting (the company must not be in the trash).
+     */
+    public function restore(User $user, Workplace $workplace): bool
+    {
+        $company = Company::withTrashed()->find($workplace->company_id);
+
+        return $company !== null && ! $company->trashed() && $this->delete($user, $workplace);
+    }
+
     public function viewCredentials(User $user, Workplace $workplace): bool
     {
         return $user->hasPermissionOn(Permission::WorkplaceViewCredentials, $workplace);

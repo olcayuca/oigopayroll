@@ -47,4 +47,12 @@ class CompanyPolicy
     {
         return $company->firm->isActive() && $user->hasPermissionOn(Permission::CompanyDelete, $company);
     }
+
+    /**
+     * Restore from the trash: same right as deleting.
+     */
+    public function restore(User $user, Company $company): bool
+    {
+        return $this->delete($user, $company);
+    }
 }

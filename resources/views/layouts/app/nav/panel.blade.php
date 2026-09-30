@@ -17,6 +17,9 @@
             :current="request()->routeIs('workplaces.*') || request()->routeIs('imports.*') && request()->route('type') === 'isyeri'" wire:navigate>
             İşyerleri
         </flux:sidebar.item>
+        <flux:sidebar.item icon="trash" :href="route('trash.index')" :current="request()->routeIs('trash.*')" wire:navigate>
+            Çöp Kutusu
+        </flux:sidebar.item>
     </flux:sidebar.group>
 
     @php($activeFirm = auth()->user()->activeFirm())

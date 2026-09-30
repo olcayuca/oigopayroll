@@ -40,6 +40,7 @@ Route::domain(config('portals.admin'))
         Route::livewire('bordro-kodlari', 'pages::admin.codes.index')->name('codes.index');
         Route::livewire('calisma-takvimi', 'pages::admin.holidays.index')->name('holidays.index');
         Route::livewire('kvkk', 'pages::admin.kvkk.index')->name('kvkk.index');
+        Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
         Route::get('kvkk/basvurular/{kvkkRequest}/veri', DownloadPersonalData::class)->name('kvkk.export');
     });
 
@@ -58,6 +59,8 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/yeni', 'pages::panel.workplaces.form')->name('workplaces.create');
         Route::livewire('isyerleri/{workplace}', 'pages::panel.workplaces.show')->name('workplaces.show');
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
+
+        Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
         Route::livewire('firma-erisimleri', 'pages::panel.firm-access.index')->name('firm-access.index');

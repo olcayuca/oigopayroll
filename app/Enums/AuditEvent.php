@@ -51,6 +51,9 @@ enum AuditEvent: string
     case WorkplaceCreated = 'workplace.created';
     case WorkplaceUpdated = 'workplace.updated';
     case WorkplaceDeleted = 'workplace.deleted';
+    case CompanyRestored = 'company.restored';
+    case WorkplaceRestored = 'workplace.restored';
+    case RecordPurged = 'system.record_purged';
     case ImportCompleted = 'import.completed';
 
     // System
@@ -107,6 +110,9 @@ enum AuditEvent: string
             self::WorkplaceCreated => 'İşyeri oluşturuldu',
             self::WorkplaceUpdated => 'İşyeri güncellendi',
             self::WorkplaceDeleted => 'İşyeri silindi',
+            self::CompanyRestored => 'Şirket geri alındı',
+            self::WorkplaceRestored => 'İşyeri geri alındı',
+            self::RecordPurged => 'Kayıt kalıcı olarak silindi',
             self::ImportCompleted => 'Excel aktarımı tamamlandı',
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',
@@ -158,7 +164,7 @@ enum AuditEvent: string
             self::LoginFailed, self::Lockout, self::IpBlocked => 'red',
             self::CredentialRevealed, self::SettingsChanged, self::SessionTerminated, self::IdleLogout,
             self::UserDeactivated, self::FirmDeactivated, self::FirmRejected, self::AccessRevoked,
-            self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset, self::ConsentRevoked,
+            self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset, self::RecordPurged, self::ConsentRevoked,
             self::PersonalDataExported, self::UserAnonymized => 'amber',
             self::Login, self::Logout => 'zinc',
             default => 'sky',
