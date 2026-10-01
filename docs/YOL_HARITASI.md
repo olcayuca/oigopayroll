@@ -73,6 +73,9 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Raporlar (Admin → Raporlar): özet (firma durumları, tehlike sınıfları, il dağılımı, son 6 ay) ve Excel dışa aktarma
   (firmalar, kullanıcılar, şirketler, işyerleri, işlem kayıtları); panelde Şirketler/İşyerleri "Excel İndir".
   Şifre ve kimlik alanları hiçbir zaman dışa aktarılmaz; her dışa aktarma işlem kaydına yazılır.
+- ✅ Excel ile toplu güncelleme: içe aktarma "ekle veya güncelle" çalışır (şirket no / şirket no + işyeri no eşleşmesi);
+  yalnızca dosyadaki sütunlar değişir, boş/eksik şifre sütunları korunur; önizlemede Yeni / Güncellenecek / Değişiklik yok;
+  güncelleme için düzenleme yetkisi gerekir, başka firmanın ve çöp kutusundaki kayıtlar reddedilir
 
 ### 2.3 Web Sitesi (landing içeriği)
 - ✅ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir

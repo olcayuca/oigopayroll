@@ -18,7 +18,7 @@ use Throwable;
 class SpreadsheetReader
 {
     /**
-     * @return array{errors: list<string>, rows: array<int, array<string, mixed>>}
+     * @return array{errors: list<string>, columns: list<string>, rows: array<int, array<string, mixed>>}
      */
     public function read(ImportType $type, string $path, string $originalName): array
     {
@@ -34,7 +34,7 @@ class SpreadsheetReader
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($path);
         } catch (Throwable) {
-            return ['errors' => ['Dosya okunamadı. Lütfen sistemden indirilen Excel şablonunu kullanın.'], 'rows' => []];
+            return ['errors' => ['Dosya okunamadı. Lütfen sistemden indirilen Excel şablonunu kullanın.'], 'columns' => [], 'rows' => []];
         }
 
         $sheet = $spreadsheet->getSheet(0);
@@ -64,8 +64,10 @@ class SpreadsheetReader
             $foundKeys[$field->key] = true;
         }
 
+        // Credential columns may be left out: an update keeps the stored values, and new rows
+        // are still checked for them one by one.
         foreach (ImportColumns::for($type) as $field) {
-            if ($field->required && ! isset($foundKeys[$field->key])) {
+            if ($field->required && $field->type !== Field::SECRET && ! isset($foundKeys[$field->key])) {
                 $errors[] = "Zorunlu \"{$field->label}\" sütunu dosyada bulunamadı.";
             }
         }
@@ -92,7 +94,7 @@ class SpreadsheetReader
 
         $spreadsheet->disconnectWorksheets();
 
-        return ['errors' => $errors, 'rows' => $rows];
+        return ['errors' => $errors, 'columns' => array_keys($foundKeys), 'rows' => $rows];
     }
 
     private function convert(Field $field, mixed $value): mixed

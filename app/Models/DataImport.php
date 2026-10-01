@@ -21,8 +21,11 @@ use Illuminate\Support\Carbon;
  * @property int|null $user_id
  * @property string $original_filename
  * @property list<string>|null $file_errors
+ * @property list<string>|null $columns Field keys found in the file.
  * @property int $total_rows
  * @property int $error_rows
+ * @property int $created_rows
+ * @property int $updated_rows
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -30,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $user
  * @property-read Collection<int, DataImportRow> $rows
  */
-#[Fillable(['type', 'status', 'firm_id', 'user_id', 'original_filename', 'file_errors', 'total_rows', 'error_rows', 'completed_at'])]
+#[Fillable(['type', 'status', 'firm_id', 'user_id', 'original_filename', 'file_errors', 'columns', 'total_rows', 'error_rows', 'created_rows', 'updated_rows', 'completed_at'])]
 class DataImport extends Model
 {
     /**
@@ -69,6 +72,16 @@ class DataImport extends Model
     }
 
     /**
+     * Rows per planned action (create / update / unchanged).
+     *
+     * @return array<string, int>
+     */
+    public function actionCounts(): array
+    {
+        return $this->rows->countBy(fn (DataImportRow $row) => $row->action ?? 'none')->all();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -79,6 +92,7 @@ class DataImport extends Model
             'type' => ImportType::class,
             'status' => ImportStatus::class,
             'file_errors' => 'array',
+            'columns' => 'array',
             'completed_at' => 'datetime',
         ];
     }

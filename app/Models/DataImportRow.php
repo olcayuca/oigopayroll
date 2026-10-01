@@ -15,14 +15,21 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $row_number
  * @property array<string, mixed> $data
  * @property array<string, list<string>>|null $errors
+ * @property string|null $action create | update | unchanged
  * @property string|null $created_record_type
  * @property int|null $created_record_id
  * @property-read DataImport $import
- * @property-read Model|null $createdRecord
+ * @property-read Model|null $createdRecord The record created or updated by this row.
  */
-#[Fillable(['data_import_id', 'row_number', 'data', 'errors', 'created_record_type', 'created_record_id'])]
+#[Fillable(['data_import_id', 'row_number', 'data', 'errors', 'action', 'created_record_type', 'created_record_id'])]
 class DataImportRow extends Model
 {
+    public const CREATE = 'create';
+
+    public const UPDATE = 'update';
+
+    public const UNCHANGED = 'unchanged';
+
     public $timestamps = false;
 
     /**

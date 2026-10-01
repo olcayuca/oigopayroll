@@ -95,8 +95,12 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
             return;
         }
 
+        $import->refresh();
         $label = $this->importType === ImportType::Company ? 'şirket' : 'işyeri';
-        Flux::toast(variant: 'success', text: "{$import->total_rows} {$label} oluşturuldu.");
+        Flux::toast(variant: 'success', text: collect([
+            $import->created_rows ? "{$import->created_rows} {$label} oluşturuldu" : null,
+            $import->updated_rows ? "{$import->updated_rows} {$label} güncellendi" : null,
+        ])->filter()->implode(', ') ?: 'Değişiklik yapılmadı.');
 
         $this->redirectRoute($this->importType === ImportType::Company ? 'companies.index' : 'workplaces.index', navigate: true);
     }
@@ -144,10 +148,15 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
     </flux:breadcrumbs>
 
     <div>
-        <flux:heading size="xl">Excel ile Toplu {{ $this->importType->label() }} Oluşturma</flux:heading>
+        <flux:heading size="xl">Excel ile Toplu {{ $this->importType->label() }} Ekleme / Güncelleme</flux:heading>
         <flux:text class="mt-1">
             Şablonu İndir → Excel'i Doldur → Yükle → Kontrol / Önizleme → Onayla.
-            Onay verilmeden hiçbir kayıt oluşturulmaz.
+            Onay verilmeden hiçbir kayıt oluşturulmaz veya değiştirilmez.
+        </flux:text>
+        <flux:text class="mt-1">
+            Mevcut kayıtları toplu güncellemek için listedeki <strong>Excel İndir</strong> ile aldığınız dosyayı düzenleyip yükleyin:
+            {{ $this->importType === \App\Enums\ImportType::Company ? 'şirket numarası' : 'şirket numarası + işyeri numarası' }} eşleşen satırlar güncellenir,
+            diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir; şifre sütunları boş veya yoksa mevcut şifreler korunur.
         </flux:text>
     </div>
 

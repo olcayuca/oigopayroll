@@ -44,7 +44,7 @@ class ExcelImportTest extends PayrollTestCase
         $path = $this->fillTemplate(ImportType::Company, [
             $this->companyRow('1001'),
             $this->companyRow('1001'),                                   // duplicate in file
-            $this->companyRow('5000'),                                   // already in the system
+            $this->companyRow('5000'),                                   // already in the firm: an update
             [...$this->companyRow('1002'), 'Şirket Sektörü *' => 'Uzay'], // not in the list
             [...$this->companyRow('1003'), 'Vergi Numarası *' => ''],     // required
         ]);
@@ -52,13 +52,14 @@ class ExcelImportTest extends PayrollTestCase
         $import = app(ImportService::class)->preview(ImportType::Company, $firm, $path, 'sirketler.xlsx');
 
         $this->assertSame(5, $import->total_rows);
-        $this->assertSame(4, $import->error_rows);
+        $this->assertSame(3, $import->error_rows);
         $this->assertFalse($import->canBeConfirmed());
 
         $errors = $import->rows->pluck('errors', 'row_number');
         $this->assertNull($errors[2]);
         $this->assertStringContainsString('2. satırda', $errors[3]['company_no'][0]);
-        $this->assertArrayHasKey('company_no', $errors[4]);
+        $this->assertNull($errors[4]);
+        $this->assertSame('update', $import->rows->firstWhere('row_number', 4)?->action);
         $this->assertSame(['Şirket Sektörü listede bulunamadı: "Uzay".'], $errors[5]['sector_id']);
         $this->assertArrayHasKey('tax_number', $errors[6]);
 
