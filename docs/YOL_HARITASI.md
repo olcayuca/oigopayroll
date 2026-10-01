@@ -85,6 +85,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Landing sayfası bölümleri (başlık, hizmetler, iletişim vb.) admin'den düzenlenebilir
 - ✅ Landing sayfası tasarımı (hero, hizmetler, hakkımızda, iletişim, SEO)
 
+### 2.3.1 Duyurular
+- ✅ Admin → Duyurular: bilgi / uyarı / kritik; hedef herkes, müşteriler, HRD personeli veya seçili firmalar; başlangıç/bitiş;
+  panelde sayfa üstünde gösterilir, kullanıcı kapatabilir (kritik kapatılamaz), kaç kişinin kapattığı görünür
+
 ### 2.4 Sistem Ayarları
 - ✅ Sektör listesi yönetimi
 - ✅ Risk sınıfı listesi yönetimi

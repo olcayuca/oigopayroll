@@ -13,6 +13,11 @@
                 </form>
             </div>
         @endif
+
+        @if (\App\Enums\Portal::fromHost(request()->getHost()) === \App\Enums\Portal::Panel)
+            <livewire:announcements />
+        @endif
+
         {{ $slot }}
     </flux:main>
 </x-layouts::app.sidebar>

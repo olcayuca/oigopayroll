@@ -67,6 +67,9 @@
     </flux:sidebar.group>
 
     <flux:sidebar.group heading="Sistem" class="grid">
+        <flux:sidebar.item icon="megaphone" :href="route('admin.announcements.index')" :current="request()->routeIs('admin.announcements.*')" wire:navigate>
+            Duyurular
+        </flux:sidebar.item>
         <flux:sidebar.item icon="globe-alt" :href="route('admin.website.index')" :current="request()->routeIs('admin.website.*')" wire:navigate>
             Web Sitesi
         </flux:sidebar.item>

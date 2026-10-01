@@ -70,6 +70,7 @@ enum AuditEvent: string
     // System
     case SystemSettingsChanged = 'system.settings_changed';
     case WebsiteChanged = 'system.website_changed';
+    case AnnouncementSaved = 'system.announcement_saved';
     case ParameterChanged = 'system.parameter_changed';
 
     // KVKK
@@ -138,6 +139,7 @@ enum AuditEvent: string
             self::ImportCompleted => 'Excel aktarımı tamamlandı',
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',
+            self::AnnouncementSaved => 'Duyuru kaydedildi',
             self::ParameterChanged => 'Yasal parametre değişti',
             self::PolicyPublished => 'KVKK metni yayımlandı',
             self::ConsentGiven => 'KVKK metni onaylandı',

@@ -42,6 +42,7 @@ Route::domain(config('portals.admin'))
 
         Route::livewire('ayarlar', 'pages::admin.settings.index')->name('settings.index');
         Route::livewire('web-sitesi', 'pages::admin.website.index')->name('website.index');
+        Route::livewire('duyurular', 'pages::admin.announcements.index')->name('announcements.index');
         Route::livewire('guvenlik', 'pages::admin.security.index')->name('security.index');
         Route::livewire('sistem-sagligi', 'pages::admin.system.health')->name('system.health');
         Route::livewire('yasal-parametreler', 'pages::admin.parameters.index')->name('parameters.index');
