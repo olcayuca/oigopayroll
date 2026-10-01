@@ -47,6 +47,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Workplace> $workplaces
  * @property-read User|null $creator
  * @property-read User|null $specialist
+ * @property-read Collection<int, FirmDocument> $documents
  * @property-read User|null $reviewer
  */
 #[Fillable([
@@ -120,6 +121,14 @@ class Firm extends Model
     public function managedLinks(): HasMany
     {
         return $this->hasMany(FirmLink::class, 'manager_firm_id');
+    }
+
+    /**
+     * @return HasMany<FirmDocument, $this>
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(FirmDocument::class);
     }
 
     /**

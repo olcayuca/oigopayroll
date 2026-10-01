@@ -334,7 +334,7 @@ new #[Title('Firma Detayı')] class extends Component {
     @endif
 
     <x-tabs :active="$tab"
-        :tabs="['genel' => 'Genel Bilgiler', 'kullanicilar' => 'Kullanıcılar', 'erisim' => 'Firmalar Arası Yetki', 'sirketler' => 'Şirketler']"
+        :tabs="['genel' => 'Genel Bilgiler', 'kullanicilar' => 'Kullanıcılar', 'erisim' => 'Firmalar Arası Yetki', 'sirketler' => 'Şirketler', 'belgeler' => 'Belgeler']"
         :counts="['kullanicilar' => $this->grants->count(), 'erisim' => $this->managerLinks->count() + $this->managedLinks->count(), 'sirketler' => $this->companies->count()]" />
 
     @if ($tab === 'genel')
@@ -487,6 +487,10 @@ new #[Title('Firma Detayı')] class extends Component {
         </flux:table>
     </section>
 
+    @endif
+
+    @if ($tab === 'belgeler')
+        <livewire:firm-documents :firm="$firm" :key="'documents-'.$firm->id" />
     @endif
 
     @if ($tab === 'sirketler')

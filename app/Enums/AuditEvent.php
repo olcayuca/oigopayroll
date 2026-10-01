@@ -33,6 +33,9 @@ enum AuditEvent: string
     case FirmLinked = 'firm.linked';
     case FirmUnlinked = 'firm.unlinked';
     case SpecialistAssigned = 'firm.specialist_assigned';
+    case DocumentUploaded = 'firm.document_uploaded';
+    case DocumentDeleted = 'firm.document_deleted';
+    case DocumentDownloaded = 'firm.document_downloaded';
 
     // Users and access
     case UserCreated = 'user.created';
@@ -99,6 +102,9 @@ enum AuditEvent: string
             self::FirmLinked => 'Firmalar arası yetki verildi',
             self::FirmUnlinked => 'Firmalar arası yetki kaldırıldı',
             self::SpecialistAssigned => 'Sorumlu uzman değişti',
+            self::DocumentUploaded => 'Firma belgesi yüklendi',
+            self::DocumentDeleted => 'Firma belgesi silindi',
+            self::DocumentDownloaded => 'Firma belgesi indirildi',
             self::UserCreated => 'Kullanıcı oluşturuldu',
             self::UserUpdated => 'Kullanıcı güncellendi',
             self::UserActivated => 'Kullanıcı aktifleştirildi',

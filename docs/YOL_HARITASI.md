@@ -55,6 +55,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Kullanıcı–firma aidiyeti: her müşteri kullanıcısı tek bir firmaya aittir; başka firmaya sızma yok
 - ✅ Yönetici firma, yönettiği firmaya kendi kullanıcılarını tek tek atar (bağlantı yetkileriyle sınırlı)
 - ✅ Alt firma: firma kendi altında firma açar, otomatik yönetim bağlantısı kurulur (HRD onayına düşer)
+- ✅ Firma belgeleri: vergi levhası, imza sirküleri, sicil gazetesi, faaliyet/SGK belgesi, vekaletname, sözleşme…; firma geneli veya şirkete ait;
+  geçerlilik tarihi ve 30 gün önceden uyarı; private depoda, yetkili indirme (loglu); panel → Belgeler, admin → firma detayı → Belgeler, Admin → Belge Takibi
 
 ### 2.2 Kullanıcılar
 - ✅ Liste (tip, durum, arama filtreleri)

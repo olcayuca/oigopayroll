@@ -1,6 +1,7 @@
 <?php
 
 use App\Exports\ExportType;
+use App\Http\Controllers\DownloadFirmDocument;
 use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
@@ -31,6 +32,7 @@ Route::domain(config('portals.admin'))
         Route::get('firmalar/excel/sablon', DownloadFirmTemplate::class)->name('firms.template');
         Route::livewire('firmalar/{firm}', 'pages::admin.firms.show')->name('firms.show');
 
+        Route::livewire('belge-takibi', 'pages::admin.documents.index')->name('documents.index');
         Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
         Route::livewire('kullanicilar/{user}', 'pages::admin.users.show')->name('users.show');
         Route::livewire('uzman-dagilimi', 'pages::admin.specialists.index')->name('specialists.index');
@@ -68,6 +70,7 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
 
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
+        Route::livewire('belgeler', 'pages::panel.documents.index')->name('documents.index');
         Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri'])->name('exports.download');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
@@ -76,5 +79,8 @@ Route::domain(config('portals.panel'))
         Route::livewire('aktarim/{type}', 'pages::panel.imports.upload')->name('imports.create');
         Route::get('aktarim/{type}/sablon', DownloadImportTemplate::class)->name('imports.template');
     });
+
+// Both panels: firm document download (FirmPolicy::viewDocuments, audited).
+Route::get('belgeler/{document}/indir', DownloadFirmDocument::class)->middleware(['auth', 'verified'])->name('documents.download');
 
 require __DIR__.'/settings.php';

@@ -31,6 +31,15 @@
         >
             Uzman Dağılımı
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="document-text"
+            :href="route('admin.documents.index')"
+            :current="request()->routeIs('admin.documents.*')"
+            :badge="\App\Models\FirmDocument::whereNotNull('valid_until')->whereDate('valid_until', '<', today())->count() ?: null"
+            wire:navigate
+        >
+            Belge Takibi
+        </flux:sidebar.item>
         <flux:sidebar.item icon="shield-check" :href="route('admin.permission-templates.index')" :current="request()->routeIs('admin.permission-templates.*')" wire:navigate>
             Yetki Şablonları
         </flux:sidebar.item>

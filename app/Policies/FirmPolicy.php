@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Enums\UserType;
 use App\Models\Firm;
@@ -51,6 +52,16 @@ class FirmPolicy
     public function manageUsers(User $user, Firm $firm): bool
     {
         return $firm->isActive() && $user->hasPermissionOn(Permission::FirmManageUsers, $firm);
+    }
+
+    public function viewDocuments(User $user, Firm $firm): bool
+    {
+        return $user->hasPermissionOn(Permission::FirmView, $firm);
+    }
+
+    public function manageDocuments(User $user, Firm $firm): bool
+    {
+        return $firm->status !== FirmStatus::Passive && $user->hasPermissionOn(Permission::FirmUpdate, $firm);
     }
 
     public function delete(User $user, Firm $firm): bool
