@@ -105,6 +105,13 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Güvenlik ayarları: admin için 2FA zorunluluğu, IP kısıtı, hareketsizlikte çıkış, giriş deneme sınırı
 - ✅ Güvenlik başlıkları (clickjacking, MIME sniffing, referrer, HSTS)
 
+### 2.7 Sistem Sağlığı
+- ✅ Kontroller: PHP/Laravel sürümü, ortam, hata ayıklama, uygulama anahtarı, HTTPS çerezleri, admin 2FA, IP kısıtı,
+  veritabanı bağlantı/boyut/bekleyen güncelleme, disk alanı, günlük boyutu, zamanlayıcı, kuyruk, e-posta, son yedek
+- ✅ Yedekleme: `php artisan hrd:yedek`, her gece 02:30 otomatik, gzip, son 14 yedek; private depoda, panelden indirilemez
+- ✅ Son hatalar (uygulama günlüğünden)
+- ⬜ Canlı sunucu: cron'a `* * * * * php artisan schedule:run`, `.env`'e `BACKUP_MYSQLDUMP` yolu; yedeklerin sunucu dışına kopyalanması
+
 ## 3. Panel (panel.siteadi.com)
 
 ### 3.1 Şirketler (Word: 3. Aşama)

@@ -55,6 +55,8 @@ enum AuditEvent: string
     case WorkplaceRestored = 'workplace.restored';
     case RecordPurged = 'system.record_purged';
     case DataExported = 'system.data_exported';
+    case BackupCreated = 'system.backup_created';
+    case BackupFailed = 'system.backup_failed';
     case ImportCompleted = 'import.completed';
 
     // System
@@ -115,6 +117,8 @@ enum AuditEvent: string
             self::WorkplaceRestored => 'İşyeri geri alındı',
             self::RecordPurged => 'Kayıt kalıcı olarak silindi',
             self::DataExported => 'Excel dışa aktarma',
+            self::BackupCreated => 'Veritabanı yedeği alındı',
+            self::BackupFailed => 'Veritabanı yedeği alınamadı',
             self::ImportCompleted => 'Excel aktarımı tamamlandı',
             self::SystemSettingsChanged => 'Sistem ayarları değişti',
             self::WebsiteChanged => 'Web sitesi içeriği değişti',
@@ -163,7 +167,7 @@ enum AuditEvent: string
     public function color(): string
     {
         return match ($this) {
-            self::LoginFailed, self::Lockout, self::IpBlocked => 'red',
+            self::LoginFailed, self::Lockout, self::IpBlocked, self::BackupFailed => 'red',
             self::CredentialRevealed, self::SettingsChanged, self::SessionTerminated, self::IdleLogout,
             self::UserDeactivated, self::FirmDeactivated, self::FirmRejected, self::AccessRevoked,
             self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset, self::RecordPurged, self::ConsentRevoked,

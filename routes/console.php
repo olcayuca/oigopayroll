@@ -2,7 +2,15 @@
 
 use App\Models\AuditLog;
 use App\Support\SecuritySettings;
+use App\System\HealthChecks;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
+
+// Proof that the scheduler runs (Admin → Sistem Sağlığı).
+Schedule::call(fn () => Cache::forever(HealthChecks::SCHEDULER_HEARTBEAT, now()->getTimestamp()))
+    ->everyMinute()->description('Zamanlayıcı nabzı');
+
+Schedule::command('hrd:yedek')->dailyAt('02:30')->withoutOverlapping()->description('Günlük veritabanı yedeği');
 
 // Drop audit records older than the configured retention (Admin → Güvenlik → Ayarlar).
 Schedule::call(function () {

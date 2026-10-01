@@ -67,6 +67,9 @@
         >
             Güvenlik
         </flux:sidebar.item>
+        <flux:sidebar.item icon="heart" :href="route('admin.system.health')" :current="request()->routeIs('admin.system.*')" wire:navigate>
+            Sistem Sağlığı
+        </flux:sidebar.item>
         <flux:sidebar.item
             icon="finger-print"
             :href="route('admin.kvkk.index')"
