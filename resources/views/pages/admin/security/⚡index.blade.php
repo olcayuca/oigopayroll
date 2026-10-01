@@ -354,7 +354,12 @@ new #[Title('Güvenlik')] class extends Component {
                             @if ($log->user) <div class="text-xs text-zinc-500">{{ $log->user->email }}</div> @endif
                         </flux:table.cell>
                         <flux:table.cell><flux:badge size="sm" :color="$log->event->color()" inset="top bottom">{{ $log->event->label() }}</flux:badge></flux:table.cell>
-                        <flux:table.cell class="max-w-md whitespace-normal">{{ $log->description }}</flux:table.cell>
+                        <flux:table.cell class="max-w-md whitespace-normal">
+                            {{ $log->description }}
+                            @if (isset($log->properties['impersonated_by']))
+                                <flux:badge size="sm" color="amber" inset="top bottom">Destek görünümü · {{ \App\Models\User::find($log->properties['impersonated_by'])->name ?? '#'.$log->properties['impersonated_by'] }}</flux:badge>
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap">
                             {{ $log->ip_address ?? '—' }}
                             <div class="text-xs text-zinc-500">{{ $log->portal }}</div>

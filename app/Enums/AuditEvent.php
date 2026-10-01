@@ -22,6 +22,8 @@ enum AuditEvent: string
     case IpBlocked = 'security.ip_blocked';
     case SettingsChanged = 'security.settings_changed';
     case CredentialRevealed = 'security.credential_revealed';
+    case ImpersonationStarted = 'security.impersonation_started';
+    case ImpersonationEnded = 'security.impersonation_ended';
 
     // Firms
     case FirmCreated = 'firm.created';
@@ -96,6 +98,8 @@ enum AuditEvent: string
             self::IpBlocked => 'İzinsiz IP engellendi',
             self::SettingsChanged => 'Güvenlik ayarları değişti',
             self::CredentialRevealed => 'İşyeri şifresi görüntülendi',
+            self::ImpersonationStarted => 'Destek görünümü başladı',
+            self::ImpersonationEnded => 'Destek görünümü bitti',
             self::FirmCreated => 'Firma oluşturuldu',
             self::FirmUpdated => 'Firma güncellendi',
             self::FirmApproved => 'Firma onaylandı',
@@ -180,7 +184,7 @@ enum AuditEvent: string
     {
         return match ($this) {
             self::LoginFailed, self::Lockout, self::IpBlocked, self::BackupFailed => 'red',
-            self::CredentialRevealed, self::SettingsChanged, self::SessionTerminated, self::IdleLogout,
+            self::CredentialRevealed, self::ImpersonationStarted, self::SettingsChanged, self::SessionTerminated, self::IdleLogout,
             self::UserDeactivated, self::FirmDeactivated, self::FirmRejected, self::AccessRevoked,
             self::CompanyDeleted, self::WorkplaceDeleted, self::UserPasswordReset, self::RecordPurged, self::ConsentRevoked,
             self::PersonalDataExported, self::UserAnonymized => 'amber',

@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Enums\AuditEvent;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Impersonation;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
@@ -35,6 +36,10 @@ class AuditAuthEvents
 
     public function handleLogin(Login $event): void
     {
+        if (Impersonation::active()) {
+            return;
+        }
+
         $user = $event->user instanceof User ? $event->user : null;
 
         Audit::log(AuditEvent::Login, 'Giriş yapıldı', $user, ['remember' => $event->remember], $user);
@@ -42,6 +47,10 @@ class AuditAuthEvents
 
     public function handleLogout(Logout $event): void
     {
+        if (Impersonation::active()) {
+            return;
+        }
+
         $user = $event->user instanceof User ? $event->user : null;
 
         Audit::log(AuditEvent::Logout, 'Çıkış yapıldı', $user, [], $user);

@@ -129,6 +129,22 @@ new #[Title('Kullanıcı')] class extends Component {
         Flux::toast(variant: 'success', text: $this->user->is_active ? 'Hesap aktifleştirildi.' : 'Hesap pasife alındı.');
     }
 
+    /**
+     * Open the panel as this user (destek görünümü) in a new tab.
+     */
+    public function impersonate(): void
+    {
+        try {
+            $token = \App\Support\Impersonation::issue(auth()->user(), $this->user);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Flux::toast(variant: 'danger', text: collect($e->errors())->flatten()->first());
+
+            return;
+        }
+
+        $this->js('window.open('.json_encode(\App\Enums\Portal::Panel->url('destek/'.$token)).', "_blank")');
+    }
+
     public function resetPassword(ManageUser $manageUser): void
     {
         $this->authorize('update', $this->user);
@@ -270,6 +286,10 @@ new #[Title('Kullanıcı')] class extends Component {
         </div>
 
         <div class="flex flex-wrap gap-2">
+            @if ($user->is_active && $user->type !== \App\Enums\UserType::SuperAdmin)
+                <flux:button icon="eye" wire:click="impersonate"
+                    wire:confirm="Panel, {{ $user->name }} olarak yeni sekmede açılacak (en fazla {{ \App\Support\Impersonation::MAX_MINUTES }} dakika). Yapılan her işlem sizin adınızla kayda geçer. Devam edilsin mi?">Kullanıcı olarak görüntüle</flux:button>
+            @endif
             <flux:button icon="key" wire:click="resetPassword"
                 wire:confirm="Yeni bir geçici şifre oluşturulsun mu? Mevcut şifre geçersiz olur.">Şifre Sıfırla</flux:button>
             @if ($user->is_active)

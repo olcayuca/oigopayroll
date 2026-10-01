@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnforcePortal;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\GuardImpersonation;
 use App\Http\Middleware\RequirePolicyConsent;
 use App\Http\Middleware\SecureAdminPortal;
 use App\Http\Middleware\SecurityHeaders;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             EnforcePortal::class,
             SecureAdminPortal::class,
+            GuardImpersonation::class,
             RequirePolicyConsent::class,
         ]);
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
 use App\Http\Controllers\DownloadReport;
 use App\Http\Controllers\ExportFirmRecords;
+use App\Http\Controllers\ImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -53,6 +54,12 @@ Route::domain(config('portals.admin'))
             ->whereIn('report', array_column(ExportType::cases(), 'value'))->name('reports.download');
         Route::get('kvkk/basvurular/{kvkkRequest}/veri', DownloadPersonalData::class)->name('kvkk.export');
     });
+
+// panel.siteadi.com: destek görünümü hand-over (token from the admin portal) and its end
+Route::domain(config('portals.panel'))->group(function () {
+    Route::get('destek/{token}', [ImpersonationController::class, 'start'])->middleware('throttle:20,1')->name('impersonation.start');
+    Route::post('destek/bitir', [ImpersonationController::class, 'stop'])->middleware('auth')->name('impersonation.stop');
+});
 
 // panel.siteadi.com: client firms
 Route::domain(config('portals.panel'))

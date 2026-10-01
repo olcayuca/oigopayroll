@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Kvkk\Policies;
+use App\Support\Impersonation;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,6 +34,7 @@ class RequirePolicyConsent
 
         // Unnamed routes are framework assets (Livewire / Flux scripts); pages are always named.
         if ($user === null
+            || Impersonation::active($request)
             || $request->route()?->getName() === null
             || $request->routeIs(...self::ALLOWED_ROUTES, ...SecureAdminPortal::TWO_FACTOR_SETUP_ROUTES)) {
             return $next($request);

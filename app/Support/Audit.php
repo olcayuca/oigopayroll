@@ -28,6 +28,11 @@ final class Audit
         try {
             $request = request();
             $actor = $user ?? Auth::user();
+            $impersonation = Impersonation::state($request);
+
+            if ($impersonation !== null) {
+                $properties['impersonated_by'] = $impersonation['by'];
+            }
 
             AuditLog::create([
                 'user_id' => $actor instanceof User ? $actor->getKey() : null,

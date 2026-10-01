@@ -108,6 +108,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Aktif oturumlar ve oturum sonlandırma
 - ✅ Güvenlik ayarları: admin için 2FA zorunluluğu, IP kısıtı, hareketsizlikte çıkış, giriş deneme sınırı
 - ✅ Güvenlik başlıkları (clickjacking, MIME sniffing, referrer, HSTS)
+- ✅ Destek görünümü (kullanıcı yerine geçme): yalnızca süper admin; tek kullanımlık 60 sn'lik anahtar, panelde ayrı oturum,
+  en fazla 30 dk, her sayfada uyarı + bitir; hesap ayarları ve KVKK kararları kapalı; bu sürede yapılan işlemler adminin adıyla kayıtlı
 
 ### 2.7 Sistem Sağlığı
 - ✅ Kontroller: PHP/Laravel sürümü, ortam, hata ayıklama, uygulama anahtarı, HTTPS çerezleri, admin 2FA, IP kısıtı,
