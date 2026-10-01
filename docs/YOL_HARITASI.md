@@ -35,7 +35,7 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Panelde aktif firma seçimi
 - ✅ Git deposu (github.com/olcayuca/oigopayroll)
 - ✅ İlçe listesi: 973 ilçe, resmi ilçe kodlarıyla (iki bağımsız kaynakla doğrulandı)
-- ⏸ E-posta gönderimi (şifre sıfırlama, davet, onay/red bildirimi) — SMTP bilgileri sonra; şu an `log` sürücüsü
+- ⏸ E-posta gönderimi (şifre sıfırlama, davet, onay/red bildirimi) — SMTP bilgileri sonra; şu an `log` sürücüsü. Bildirimler hazır, SMTP gelince e-postayla da gider
 
 ## 2. Admin (admin.siteadi.com)
 
@@ -88,6 +88,12 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 ### 2.3.1 Duyurular
 - ✅ Admin → Duyurular: bilgi / uyarı / kritik; hedef herkes, müşteriler, HRD personeli veya seçili firmalar; başlangıç/bitiş;
   panelde sayfa üstünde gösterilir, kullanıcı kapatabilir (kritik kapatılamaz), kaç kişinin kapattığı görünür
+
+### 2.3.2 Bildirimler
+- ✅ Sistem içi bildirimler: kenar çubuğunda zil + Bildirimler sayfası (okunmamış/tümü, tümünü okundu say)
+- ✅ Konular: firma onay/red (firma yetkilileri + uzman), onay bekleyen firma (süper adminler), KVKK yanıtı, sorumlu uzman ataması,
+  belge süresi doluyor/doldu ve sözleşme bitiyor (her gün 08:00, her durum için bir kez)
+- ⏸ E-posta: altyapı hazır; MAIL_MAILER SMTP yapılınca aynı bildirimler e-postayla da gider (kuyruk önerilir)
 
 ### 2.4 Sistem Ayarları
 - ✅ Sektör listesi yönetimi

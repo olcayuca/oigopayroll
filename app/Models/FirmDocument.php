@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string $mime_type
  * @property int $size
  * @property Carbon|null $valid_until
+ * @property string|null $expiry_notice last reminder sent: expiring | expired
  * @property string|null $notes
  * @property int|null $uploaded_by
  * @property Carbon|null $created_at

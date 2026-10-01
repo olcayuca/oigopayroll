@@ -8,9 +8,12 @@ use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Models\Firm;
 use App\Models\User;
+use App\Notifications\FirmAwaitingApproval;
+use App\Notifications\Recipients;
 use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -43,7 +46,7 @@ class CreateSubFirm
 
         $data = Validator::make(FirmRules::clean($input), FirmRules::rules(), [], FirmRules::attributes())->validate();
 
-        return DB::transaction(function () use ($parent, $data, $actor) {
+        $firm = DB::transaction(function () use ($parent, $data, $actor) {
             $firm = Firm::create([
                 ...$data,
                 'parent_firm_id' => $parent->id,
@@ -68,5 +71,9 @@ class CreateSubFirm
 
             return $firm;
         });
+
+        Notification::send(Recipients::superAdmins(), new FirmAwaitingApproval($firm));
+
+        return $firm;
     }
 }

@@ -9,9 +9,12 @@ use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Models\Firm;
 use App\Models\User;
+use App\Notifications\FirmAwaitingApproval;
+use App\Notifications\Recipients;
 use App\Support\Audit;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -31,7 +34,7 @@ class RegisterFirm
     {
         $data = Validator::make(FirmRules::clean($input), FirmRules::rules(), [], FirmRules::attributes())->validate();
 
-        return DB::transaction(function () use ($user, $data) {
+        $firm = DB::transaction(function () use ($user, $data) {
             $firm = Firm::create([
                 ...$data,
                 'status' => FirmStatus::Pending,
@@ -45,5 +48,9 @@ class RegisterFirm
 
             return $firm;
         });
+
+        Notification::send(Recipients::superAdmins(), new FirmAwaitingApproval($firm));
+
+        return $firm;
     }
 }

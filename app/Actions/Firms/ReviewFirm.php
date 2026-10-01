@@ -6,7 +6,10 @@ use App\Enums\AuditEvent;
 use App\Enums\FirmStatus;
 use App\Models\Firm;
 use App\Models\User;
+use App\Notifications\FirmReviewed;
+use App\Notifications\Recipients;
 use App\Support\Audit;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -26,6 +29,7 @@ class ReviewFirm
         ]);
 
         Audit::log(AuditEvent::FirmApproved, "Firma onaylandı: {$firm->name}", $firm);
+        Notification::send(Recipients::firm($firm), new FirmReviewed($firm, approved: true));
 
         return $firm;
     }
@@ -46,6 +50,7 @@ class ReviewFirm
         ]);
 
         Audit::log(AuditEvent::FirmRejected, "Firma reddedildi: {$firm->name}", $firm, ['reason' => $reason]);
+        Notification::send(Recipients::firm($firm), new FirmReviewed($firm, approved: false));
 
         return $firm;
     }

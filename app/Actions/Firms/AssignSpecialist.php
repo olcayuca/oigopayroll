@@ -11,6 +11,7 @@ use App\Models\AccessGrant;
 use App\Models\Firm;
 use App\Models\PermissionTemplate;
 use App\Models\User;
+use App\Notifications\SpecialistAssignedToFirm;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -64,6 +65,8 @@ class AssignSpecialist
             ['from' => $previous?->id, 'to' => $specialist?->id],
             $actor,
         );
+
+        $specialist?->notify(new SpecialistAssignedToFirm($firm));
 
         return $firm->setRelation('specialist', $specialist);
     }

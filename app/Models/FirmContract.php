@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
  * @property string $title
  * @property Carbon $starts_on
  * @property Carbon|null $ends_on null = open-ended
+ * @property Carbon|null $ending_notice_for end date the "ending soon" reminder was sent for
  * @property bool $auto_renew
  * @property int $notice_days fesih bildirim süresi
  * @property ContractFeeType $fee_type
@@ -137,6 +138,7 @@ class FirmContract extends Model
             'starts_on' => 'date',
             'ends_on' => 'date',
             'terminated_on' => 'date',
+            'ending_notice_for' => 'date',
             'auto_renew' => 'boolean',
             'notice_days' => 'integer',
             'fee_type' => ContractFeeType::class,

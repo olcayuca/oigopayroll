@@ -77,6 +77,10 @@ class ManageFirmDocuments
             'notes' => $data['notes'] ?? null,
         ]);
 
+        if ($document->wasChanged('valid_until')) {
+            $document->forceFill(['expiry_notice' => null])->save();
+        }
+
         return $document;
     }
 

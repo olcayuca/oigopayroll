@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PolicyType;
+use App\Http\Controllers\OpenNotification;
 use App\Http\Controllers\ShowPolicyDocument;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -17,6 +18,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
     Route::livewire('settings/kvkk', 'pages::settings.kvkk')->name('kvkk.edit');
+
+    Route::livewire('bildirimler', 'pages::settings.notifications')->name('notifications.index');
+    Route::get('bildirimler/{notification}', OpenNotification::class)->whereUuid('notification')->name('notifications.open');
 
     Route::livewire('settings/security', 'pages::settings.security')
         ->middleware(

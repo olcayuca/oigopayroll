@@ -7,6 +7,7 @@ use App\Enums\KvkkRequestStatus;
 use App\Enums\KvkkRequestType;
 use App\Models\KvkkRequest;
 use App\Models\User;
+use App\Notifications\KvkkRequestAnswered;
 use App\Support\Audit;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,7 @@ class DataRequests
         ], ['response.required' => 'Başvuruyu sonuçlandırırken yanıt yazılmalıdır.'], ['status' => 'Durum', 'response' => 'Yanıt'])->validate();
 
         $status = KvkkRequestStatus::from($data['status']);
+        $wasClosed = $request->status->isClosed();
 
         $request->fill([
             'status' => $status,
@@ -74,6 +76,10 @@ class DataRequests
         ])->save();
 
         Audit::log(AuditEvent::KvkkRequestUpdated, "KVKK başvurusu #{$request->id}: {$status->label()}", $request, [], $actor);
+
+        if ($status->isClosed() && ! $wasClosed && $request->user !== null) {
+            $request->user->notify(new KvkkRequestAnswered($request));
+        }
 
         return $request;
     }
