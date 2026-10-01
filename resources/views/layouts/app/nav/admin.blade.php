@@ -40,6 +40,15 @@
         >
             Belge Takibi
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="document-check"
+            :href="route('admin.contracts.index')"
+            :current="request()->routeIs('admin.contracts.*')"
+            :badge="\App\Models\FirmContract::endingSoon()->count() ?: null"
+            wire:navigate
+        >
+            Sözleşmeler
+        </flux:sidebar.item>
         <flux:sidebar.item icon="shield-check" :href="route('admin.permission-templates.index')" :current="request()->routeIs('admin.permission-templates.*')" wire:navigate>
             Yetki Şablonları
         </flux:sidebar.item>

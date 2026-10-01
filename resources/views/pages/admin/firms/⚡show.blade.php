@@ -334,7 +334,7 @@ new #[Title('Firma Detayı')] class extends Component {
     @endif
 
     <x-tabs :active="$tab"
-        :tabs="['genel' => 'Genel Bilgiler', 'kullanicilar' => 'Kullanıcılar', 'erisim' => 'Firmalar Arası Yetki', 'sirketler' => 'Şirketler', 'belgeler' => 'Belgeler']"
+        :tabs="['genel' => 'Genel Bilgiler', 'kullanicilar' => 'Kullanıcılar', 'erisim' => 'Firmalar Arası Yetki', 'sirketler' => 'Şirketler', 'belgeler' => 'Belgeler', 'sozlesmeler' => 'Sözleşmeler']"
         :counts="['kullanicilar' => $this->grants->count(), 'erisim' => $this->managerLinks->count() + $this->managedLinks->count(), 'sirketler' => $this->companies->count()]" />
 
     @if ($tab === 'genel')
@@ -487,6 +487,37 @@ new #[Title('Firma Detayı')] class extends Component {
         </flux:table>
     </section>
 
+    @endif
+
+    @if ($tab === 'sozlesmeler')
+        <div class="flex justify-end">
+            <flux:button variant="primary" icon="plus" :href="route('admin.contracts.index', ['firma' => $firm->id, 'yeni' => 1])" wire:navigate>Yeni Sözleşme</flux:button>
+        </div>
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Sözleşme</flux:table.column>
+                <flux:table.column>Süre</flux:table.column>
+                <flux:table.column>Ücret</flux:table.column>
+                <flux:table.column>Durum</flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @forelse ($firm->contracts()->orderByDesc('starts_on')->get() as $contract)
+                    <flux:table.row :key="$contract->id">
+                        <flux:table.cell>
+                            <a href="{{ route('admin.contracts.index', ['firma' => $firm->id, 'duzenle' => $contract->id]) }}" wire:navigate class="font-medium hover:underline">{{ $contract->contract_no }}</a>
+                            <div class="text-xs text-zinc-500">{{ $contract->title }}</div>
+                        </flux:table.cell>
+                        <flux:table.cell class="whitespace-nowrap">{{ $contract->starts_on->format('d.m.Y') }} – {{ $contract->ends_on?->format('d.m.Y') ?? 'süresiz' }}</flux:table.cell>
+                        <flux:table.cell>{{ $contract->fee_amount !== null ? number_format((float) $contract->fee_amount, 2, ',', '.').' '.$contract->currency : '—' }} <span class="text-xs text-zinc-500">{{ $contract->fee_type->label() }}</span></flux:table.cell>
+                        <flux:table.cell><flux:badge size="sm" :color="$contract->status()->color()" inset="top bottom">{{ $contract->status()->label() }}</flux:badge></flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <flux:table.row>
+                        <flux:table.cell colspan="4" class="py-10 text-center text-zinc-500">Sözleşme yok.</flux:table.cell>
+                    </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
     @endif
 
     @if ($tab === 'belgeler')

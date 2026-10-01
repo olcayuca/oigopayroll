@@ -57,6 +57,8 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Alt firma: firma kendi altında firma açar, otomatik yönetim bağlantısı kurulur (HRD onayına düşer)
 - ✅ Firma belgeleri: vergi levhası, imza sirküleri, sicil gazetesi, faaliyet/SGK belgesi, vekaletname, sözleşme…; firma geneli veya şirkete ait;
   geçerlilik tarihi ve 30 gün önceden uyarı; private depoda, yetkili indirme (loglu); panel → Belgeler, admin → firma detayı → Belgeler, Admin → Belge Takibi
+- ✅ Sözleşmeler (yalnızca admin): sözleşme no, süre, ücret tipi/tutarı, fesih bildirim süresi, otomatik yenileme (gece görevle aynı süre uzatılır),
+  ilgili belge, fesih; durum aktif / bitiyor / sona erdi / feshedildi; Admin → Sözleşmeler ve firma detayı → Sözleşmeler
 
 ### 2.2 Kullanıcılar
 - ✅ Liste (tip, durum, arama filtreleri)

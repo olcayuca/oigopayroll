@@ -36,6 +36,9 @@ enum AuditEvent: string
     case DocumentUploaded = 'firm.document_uploaded';
     case DocumentDeleted = 'firm.document_deleted';
     case DocumentDownloaded = 'firm.document_downloaded';
+    case ContractSaved = 'firm.contract_saved';
+    case ContractTerminated = 'firm.contract_terminated';
+    case ContractRenewed = 'firm.contract_renewed';
 
     // Users and access
     case UserCreated = 'user.created';
@@ -105,6 +108,9 @@ enum AuditEvent: string
             self::DocumentUploaded => 'Firma belgesi yüklendi',
             self::DocumentDeleted => 'Firma belgesi silindi',
             self::DocumentDownloaded => 'Firma belgesi indirildi',
+            self::ContractSaved => 'Sözleşme kaydedildi',
+            self::ContractTerminated => 'Sözleşme feshedildi',
+            self::ContractRenewed => 'Sözleşme otomatik yenilendi',
             self::UserCreated => 'Kullanıcı oluşturuldu',
             self::UserUpdated => 'Kullanıcı güncellendi',
             self::UserActivated => 'Kullanıcı aktifleştirildi',

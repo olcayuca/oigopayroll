@@ -33,6 +33,7 @@ Route::domain(config('portals.admin'))
         Route::livewire('firmalar/{firm}', 'pages::admin.firms.show')->name('firms.show');
 
         Route::livewire('belge-takibi', 'pages::admin.documents.index')->name('documents.index');
+        Route::livewire('sozlesmeler', 'pages::admin.contracts.index')->name('contracts.index');
         Route::livewire('kullanicilar', 'pages::admin.users.index')->name('users.index');
         Route::livewire('kullanicilar/{user}', 'pages::admin.users.show')->name('users.show');
         Route::livewire('uzman-dagilimi', 'pages::admin.specialists.index')->name('specialists.index');
