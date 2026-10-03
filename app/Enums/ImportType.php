@@ -2,6 +2,11 @@
 
 namespace App\Enums;
 
+use App\Models\Company;
+use App\Models\Employee;
+use App\Models\Firm;
+use App\Models\Workplace;
+
 /**
  * Bulk Excel import kinds.
  */
@@ -12,6 +17,7 @@ enum ImportType: string
     case Firm = 'firm';
     case Company = 'company';
     case Workplace = 'workplace';
+    case Employee = 'employee';
 
     /**
      * URL segment (panel: aktarim/sirket, aktarim/isyeri; admin: firma).
@@ -22,6 +28,7 @@ enum ImportType: string
             self::Firm => 'firma',
             self::Company => 'sirket',
             self::Workplace => 'isyeri',
+            self::Employee => 'personel',
         };
     }
 
@@ -34,6 +41,7 @@ enum ImportType: string
             self::Firm => 'Firmalar',
             self::Company => 'Şirketler',
             self::Workplace => 'İşyerleri',
+            self::Employee => 'Personel Bilgileri',
         };
     }
 
@@ -43,6 +51,34 @@ enum ImportType: string
             self::Firm => 'HRD_Firma_Sablonu.xlsx',
             self::Company => 'HRD_Sirket_Sablonu.xlsx',
             self::Workplace => 'HRD_Isyeri_Sablonu.xlsx',
+            self::Employee => 'HRD_Personel_Sablonu.xlsx',
+        };
+    }
+
+    /**
+     * Model class whose policy authorizes the import ("import" ability).
+     *
+     * @return class-string<Firm|Company|Workplace|Employee>
+     */
+    public function modelClass(): string
+    {
+        return match ($this) {
+            self::Firm => Firm::class,
+            self::Company => Company::class,
+            self::Workplace => Workplace::class,
+            self::Employee => Employee::class,
+        };
+    }
+
+    /**
+     * Panel list the import belongs to.
+     */
+    public function indexRoute(): string
+    {
+        return match ($this) {
+            self::Company => 'companies.index',
+            self::Employee => 'employees.index',
+            default => 'workplaces.index',
         };
     }
 
@@ -66,6 +102,7 @@ enum ImportType: string
             self::Firm => 'Firma',
             self::Company => 'Şirket',
             self::Workplace => 'İşyeri',
+            self::Employee => 'Personel',
         };
     }
 }

@@ -25,7 +25,8 @@ final class WorkplaceRules
     public static function rules(array $input, Company $company, ?Workplace $ignore = null, bool $updating = false): array
     {
         $isNaturalPerson = ($input['registration_type'] ?? null) === RegistrationType::Natural->value;
-        $secret = $updating ? 'sometimes' : 'required';
+        // A required credential may be left out on update only when one is already stored (blank = keep).
+        $secret = fn (string $field) => $updating && filled($ignore?->getAttributes()[$field] ?? null) ? 'sometimes' : 'required';
 
         return [
             'workplace_no' => ['required', 'string', 'max:50',
@@ -33,6 +34,7 @@ final class WorkplaceRules
             'branch_name' => ['required', 'string', 'max:255'],
             'workplace_type' => ['required', Rule::enum(WorkplaceType::class)],
             'workplace_kind' => ['required', Rule::enum(WorkplaceKind::class)],
+            // Defaults to the company title (WorkplaceInput::normalize) — the setup file has no such column.
             'title' => ['required', 'string', 'max:255'],
             'registration_type' => ['nullable', Rule::enum(RegistrationType::class)],
             'tax_number' => ['required', 'string', new TaxNumber(allowTckn: $isNaturalPerson)],
@@ -40,7 +42,8 @@ final class WorkplaceRules
             'mersis_no' => ['nullable', 'digits:16'],
             'risk_class_id' => ['nullable', 'integer', Rule::exists('risk_classes', 'id')->where('is_active', true)],
             'hazard_class' => ['required', Rule::enum(HazardClass::class)],
-            'labor_sector_id' => ['nullable', 'integer', Rule::exists('labor_sectors', 'id')],
+            'labor_sector_id' => ['required', 'integer', Rule::exists('labor_sectors', 'id')],
+            'nace_code' => ['required', 'string', 'regex:/^\d{2}(\.?\d{2}){1,2}$/'],
 
             'province_id' => ['nullable', 'required_without:province_name', 'integer', Rule::exists('provinces', 'id')],
             'province_name' => ['nullable', 'required_without:province_id', 'string', 'max:100'],
@@ -60,29 +63,39 @@ final class WorkplaceRules
             'kep_address' => ['nullable', 'email', 'max:255'],
             'e_signature_officer' => ['nullable', 'string', 'max:255'],
 
-            'sgk_registry_no' => ['nullable', 'digits:26', Rule::unique('workplaces', 'sgk_registry_no')->ignore($ignore)],
-            'sgk_directorate' => ['nullable', 'string', 'max:255'],
+            'sgk_registry_no' => ['required', 'digits:26', Rule::unique('workplaces', 'sgk_registry_no')->ignore($ignore)],
+            'sgk_directorate' => ['required', 'string', 'max:255'],
             'sgk_officer_name' => ['required', 'string', 'max:255'],
             'sgk_workplace_code' => ['required', 'string', 'max:50'],
             'ebildirge_officer_name' => ['required', 'string', 'max:255'],
-            'opening_date' => ['required', 'date'],
+            'opening_date' => ['nullable', 'date'],
             'closing_date' => ['nullable', 'date', 'after_or_equal:opening_date'],
             'mahiyet_code' => ['nullable', 'string', 'max:20'],
             'mahiyet_name' => ['nullable', 'string', 'max:255'],
 
-            'sgk_declaration_username' => [$secret, new Tckn],
-            'sgk_workplace_password' => [$secret, 'string', 'max:255'],
-            'sgk_system_password' => [$secret, 'string', 'max:255'],
+            'sgk_username' => [$secret('sgk_username'), new Tckn],
+            'sgk_declaration_username' => [$secret('sgk_declaration_username'), new Tckn],
+            'sgk_workplace_password' => [$secret('sgk_workplace_password'), 'string', 'max:255'],
+            'sgk_system_password' => [$secret('sgk_system_password'), 'string', 'max:255'],
 
-            'iskur_user_name' => ['nullable', 'string', 'max:255'],
-            'iskur_user_code' => ['nullable', new Tckn],
-            'iskur_password' => ['nullable', 'string', 'max:255'],
-            'iskur_registry_no' => ['nullable', 'string', 'max:50'],
+            'iskur_user_name' => ['required', 'string', 'max:255'],
+            'iskur_user_code' => [$secret('iskur_user_code'), new Tckn],
+            'iskur_password' => [$secret('iskur_password'), 'string', 'max:255'],
+            'iskur_registry_no' => ['required', 'string', 'max:50'],
             'tuik_user_full_name' => ['nullable', 'string', 'max:255'],
             'tuik_username' => ['nullable', 'string', 'max:255'],
             'tuik_password' => ['nullable', 'string', 'max:255'],
-            'tax_office_user_code' => ['nullable', 'string', 'max:50'],
-            'ebeyanname_password' => ['nullable', 'string', 'max:255'],
+            'tax_office_user_code' => ['required', 'string', 'max:50'],
+            'dvd_username' => ['required', 'string', 'max:255'],
+            'dvd_password' => [$secret('dvd_password'), 'string', 'max:255'],
+            'dvd_passphrase' => [$secret('dvd_passphrase'), 'string', 'max:255'],
+            'ebeyanname_password' => [$secret('ebeyanname_password'), 'string', 'max:255'],
+
+            'police_email' => ['required', 'email', 'max:255'],
+            'police_password' => [$secret('police_password'), 'string', 'max:255'],
+            'bes_company_name' => ['required', 'string', 'max:255'],
+            'bes_username' => ['required', 'string', 'max:255'],
+            'bes_password' => [$secret('bes_password'), 'string', 'max:255'],
 
             'has_union' => ['boolean'],
             'union_name' => ['nullable', 'required_if_accepted:has_union', 'string', 'max:255'],
@@ -112,6 +125,7 @@ final class WorkplaceRules
             'risk_class_id' => 'Risk Sınıfı',
             'hazard_class' => 'Tehlike Sınıfı',
             'labor_sector_id' => 'ÇSGB İşkolu',
+            'nace_code' => 'NACE Kodu',
             'province_id' => 'İl',
             'province_name' => 'İl',
             'district_id' => 'İlçe',
@@ -136,6 +150,7 @@ final class WorkplaceRules
             'closing_date' => 'İşyeri Kapanış Tarihi',
             'mahiyet_code' => 'Mahiyet Kodu',
             'mahiyet_name' => 'Mahiyet Adı',
+            'sgk_username' => 'SGK Kullanıcı Adı (TCKN)',
             'sgk_declaration_username' => 'SGK Bildirge Kullanıcı Adı (TCKN)',
             'sgk_workplace_password' => 'SGK İşyeri Şifresi',
             'sgk_system_password' => 'SGK Sistem Şifresi',
@@ -147,7 +162,15 @@ final class WorkplaceRules
             'tuik_username' => 'TÜİK Kullanıcı Adı',
             'tuik_password' => 'TÜİK Şifresi',
             'tax_office_user_code' => 'Vergi Dairesi Kullanıcı Kodu',
+            'dvd_username' => 'Dijital Vergi Dairesi Kullanıcı Adı',
+            'dvd_password' => 'Dijital Vergi Dairesi Şifre',
+            'dvd_passphrase' => 'Dijital Vergi Dairesi Parola',
             'ebeyanname_password' => 'e-Beyanname Şifresi',
+            'police_email' => 'Emniyet (Karakol) Bildirimi E-posta',
+            'police_password' => 'Emniyet (Karakol) Bildirimi Şifre',
+            'bes_company_name' => 'BES Firma Adı',
+            'bes_username' => 'BES Firma Kullanıcı Adı',
+            'bes_password' => 'BES Firma Şifre',
             'has_union' => 'Sendikalı İşyeri',
             'union_name' => 'Sendika Adı',
             'cba_start_date' => 'TİS Başlangıç Tarihi',

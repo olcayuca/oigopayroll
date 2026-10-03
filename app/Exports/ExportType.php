@@ -100,6 +100,7 @@ enum ExportType: string
             })],
             self::Workplaces => [...$firm, ...self::fieldColumns(WorkplaceFields::all(), fn (Workplace $workplace, string $key) => match ($key) {
                 'company_no' => $workplace->company->company_no,
+                'company_name' => $workplace->company->title,
                 'risk_class' => $workplace->riskClass?->name,
                 'labor_sector' => $workplace->laborSector?->name,
                 'province_name' => $workplace->provinceLabel(),

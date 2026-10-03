@@ -130,6 +130,29 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 
 ## 3. Panel (panel.siteadi.com)
 
+### 3.0 Panel tasarımı (kaynak: `export/` prototipi, kurallar: ARAYUZ_KURALLARI.md §3)
+- ✅ Tasarım sistemi: renk tokenları, Manrope, `x-panel.*` bileşen kütüphanesi, Flux bileşenlerinin panel teması
+- ✅ Kabuk: koyu kenar menü, üst çubukta genel arama (şirket / işyeri / SGK sicil), duyuru şeridi, firma seçici
+  (firmalar + şirket kısayolları), bildirim zili (tümünü okundu say), kullanıcı menüsü, mobil menü
+- ✅ Gösterge paneli: KPI kartları, kurulum adımları, firma yapısı, uyarılar & eksik veri, önemli tarihler (beyanname + resmi tatiller)
+- ✅ Şirketler / İşyerleri listeleri (sayaçlar, segment filtre, kurulum ilerleme çubuğu), detay ve form sayfaları
+- ✅ İşyeri kurulum tamamlanma oranı: bordro için gerekli isteğe bağlı alanlar (SGK sicil, İŞKUR/TÜİK, iletişim, risk/işkolu)
+- ✅ Panel giriş ekranı (bölünmüş düzen) ve hata sayfaları (403, 404, 419, 429, 500, 503)
+- ⬜ Prototipteki diğer ekranlar ilgili modüllerle birlikte: Personel, Tanımlar, Bordro Dönemleri, İzinler,
+  Avans & Borçlar, Toplu İşlemler, Hesaplamalar, Raporlar, İşlem Geçmişi, Abonelik, Destek, Duyurular, Ayarlar, Kurulum Sihirbazı, Çalışan Portalı
+- ⬜ Kalan mevcut sayfaların tam yeniden düzeni (Kullanıcılar, Firma Erişimleri, Belgeler, Çöp Kutusu, Excel aktarımı, Ayarlar) —
+  şu an panel temasını ve kart görünümlü tabloları alıyorlar
+- ✅ İşyeri ekranları ve Excel aktarımı müşteri kurulum dosyasına (Firma Bilgileri, 36 zorunlu alan) uyarlandı:
+  yeni alanlar (NACE, SGK kullanıcı adı, Dijital VD, Emniyet bildirimi, BES), sekmeler Genel / Vergi / SGK / İŞKUR / Emniyet & BES / Adres,
+  müşteri dosyası olduğu gibi yüklenebilir — ayrıntı: docs/KURULUM_DOSYASI.md
+- ✅ Tanımlar (firma bazlı): üst birim, birim, iş ailesi, unvan, pozisyon, seviye, masraf grubu; kullanılan tanım silinemez, pasife alınır
+- ✅ Personel: liste (durum / eksik veri filtreleri), 8 sekmeli kart ve form, kayıt tamamlanma; TCKN / IBAN / hesap no şifreli;
+  yeni yetkiler employee.view/create/update/delete/import (mevcut kullanıcılara işyeri yetkilerinin karşılığı verildi)
+- ✅ Excel ile personel: kurulum dosyasının Personel Bilgileri sayfası olduğu gibi; sicil no ile güncelleme; eksik tanımlar otomatik — docs/KURULUM_DOSYASI.md §2
+- ✅ Kurulum Sihirbazı: şirket → işyeri → tanımlar → personel → özet, gerçek durumla; gösterge panelinde "Sihirbazla kur"
+- ⬜ Personel: işten çıkış, Excel'e dışa aktarma, çöp kutusundan geri alma, KVKK aydınlatma onayı (çalışan portalıyla)
+- ❓ Üst çubuktaki bağlam seçici: prototip firma içinde **şirket** seçtiriyor; şimdilik **firma** seçici + şirket kısayolları
+
 ### 3.1 Şirketler (Word: 3. Aşama)
 - ✅ Şirket listesi (arama, işyeri sayısı)
 - ✅ Manuel şirket oluşturma (7 zorunlu + diğer alanlar) ve düzenleme

@@ -74,7 +74,7 @@ class SaveWorkplace
      */
     private function validate(array $input, Company $company, ?Workplace $ignore = null): array
     {
-        $input = WorkplaceInput::normalize($input);
+        $input = WorkplaceInput::normalize($input, $company);
 
         return Validator::make(
             $input,

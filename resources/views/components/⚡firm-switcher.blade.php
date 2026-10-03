@@ -1,11 +1,15 @@
 <?php
 
+use App\Models\Company;
 use App\Models\Firm;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
+/*
+ * Panel top bar: the active firm and a dropdown to switch firms / jump to one of its companies.
+ */
 new class extends Component {
     public string $search = '';
 
@@ -22,7 +26,10 @@ new class extends Component {
     public function firms(): Collection
     {
         return Firm::visibleTo(Auth::user())
-            ->when($this->search !== '', fn ($query) => $query->where('name', 'like', '%'.$this->search.'%'))
+            ->withCount(['companies', 'workplaces'])
+            ->when($this->search !== '', fn ($query) => $query->where(fn ($query) => $query
+                ->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('tax_number', 'like', '%'.$this->search.'%')))
             ->orderBy('name')
             ->limit(25)
             ->get();
@@ -32,6 +39,26 @@ new class extends Component {
     public function total(): int
     {
         return Firm::visibleTo(Auth::user())->count();
+    }
+
+    /**
+     * Companies of the active firm the user can see (quick links).
+     *
+     * @return Collection<int, Company>
+     */
+    #[Computed]
+    public function companies(): Collection
+    {
+        if (! $this->current) {
+            return collect();
+        }
+
+        return Company::visibleTo(Auth::user())
+            ->where('firm_id', $this->current->id)
+            ->withCount('workplaces')
+            ->orderBy('company_no')
+            ->limit(8)
+            ->get(['id', 'firm_id', 'company_no', 'short_name', 'tax_number']);
     }
 
     public function switchTo(int $firmId): void
@@ -44,41 +71,77 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="relative shrink-0" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
     @if ($this->current)
-        <flux:modal.trigger name="firm-switcher">
-            <button type="button" class="flex w-full items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-start hover:bg-zinc-800/5 dark:border-zinc-700 dark:hover:bg-white/10" data-test="firm-switcher">
-                <flux:icon name="building-office-2" variant="mini" class="shrink-0 text-zinc-400" />
-                <div class="grid flex-1 leading-tight">
-                    <span class="truncate text-sm font-medium">{{ $this->current->name }}</span>
-                    <span class="text-xs text-zinc-500">{{ $this->current->status->label() }}</span>
-                </div>
-                @if ($this->total > 1)
-                    <flux:icon name="chevrons-up-down" variant="micro" class="text-zinc-400" />
-                @endif
-            </button>
-        </flux:modal.trigger>
+        <button type="button" x-on:click="open = ! open" data-test="firm-switcher"
+            class="flex h-11 items-center gap-2.5 rounded-[11px] border-[1.5px] bg-white ps-2 pe-3 text-start transition"
+            x-bind:class="open ? 'border-brand' : 'border-[#E8EDF3] hover:border-line-2'" aria-haspopup="true" x-bind:aria-expanded="open">
+            <x-panel.avatar :initials="\App\Support\Text::initials($this->current->name)" size="sm" tone="navy" />
+            <span class="hidden min-w-0 flex-col leading-tight sm:flex">
+                <span class="max-w-[220px] truncate text-[13px] font-extrabold text-ink">{{ $this->current->name }}</span>
+                <span class="truncate text-[11px] font-semibold text-muted-2">
+                    {{ $this->current->tax_number ? 'VKN '.$this->current->tax_number : $this->current->status->label() }}
+                </span>
+            </span>
+            <flux:icon.chevron-down variant="micro" class="size-4 text-faint" />
+        </button>
 
-        <flux:modal name="firm-switcher" class="md:w-[28rem]">
-            <div class="space-y-4">
-                <flux:heading size="lg">Firma Seç</flux:heading>
-
-                @if ($this->total > 5)
-                    <flux:input wire:model.live.debounce.250ms="search" icon="magnifying-glass" placeholder="Firma ara..." autofocus />
-                @endif
-
-                <div class="max-h-80 space-y-1 overflow-y-auto">
-                    @forelse ($this->firms as $firm)
-                        <button type="button" wire:click="switchTo({{ $firm->id }})"
-                            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-sm hover:bg-zinc-800/5 dark:hover:bg-white/10 {{ $firm->id === $this->current->id ? 'bg-zinc-800/5 dark:bg-white/10' : '' }}">
-                            <span class="truncate">{{ $firm->name }}</span>
-                            <flux:badge size="sm" :color="$firm->status->color()">{{ $firm->status->label() }}</flux:badge>
-                        </button>
-                    @empty
-                        <flux:text class="py-6 text-center">Firma bulunamadı.</flux:text>
-                    @endforelse
+        <div x-cloak x-show="open" x-transition.opacity.duration.150ms
+            class="absolute end-0 top-[52px] z-30 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[14px] border border-[#E5EAF1] bg-white shadow-[0_16px_40px_rgba(16,40,72,0.16)]">
+            <div class="border-b border-line-3 px-4 pt-3.5 pb-2.5">
+                <div class="text-[10.5px] font-bold tracking-[0.12em] text-muted-2">FİRMA</div>
+                <div class="text-[13px] font-bold text-ink">
+                    {{ $this->total > 1 ? 'Çalışmak istediğiniz firmayı seçin' : $this->current->name }}
                 </div>
             </div>
-        </flux:modal>
+
+            @if ($this->total > 1)
+                @if ($this->total > 5)
+                    <div class="px-3 pt-3">
+                        <x-panel.search wire:model.live.debounce.250ms="search" placeholder="Firma adı veya VKN..." class="!max-w-none" />
+                    </div>
+                @endif
+                <div class="max-h-[300px] overflow-y-auto p-1.5">
+                    @forelse ($this->firms as $firm)
+                        @php($active = $firm->id === $this->current->id)
+                        <button type="button" wire:click="switchTo({{ $firm->id }})" wire:key="firm-{{ $firm->id }}"
+                            @class(['flex w-full items-center gap-3 rounded-[10px] p-2.5 text-start transition hover:bg-[#F1F5FA]', 'bg-[#F1F5FA]' => $active])>
+                            <x-panel.avatar :initials="\App\Support\Text::initials($firm->name)" :tone="$active ? 'navy' : 'soft'" />
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-[13.5px] font-bold text-ink">{{ $firm->name }}</span>
+                                <span class="block truncate text-[11.5px] text-muted-2">
+                                    @if ($firm->tax_number) VKN {{ $firm->tax_number }} · @endif{{ $firm->companies_count }} şirket · {{ $firm->workplaces_count }} işyeri
+                                </span>
+                            </span>
+                            @if ($active)
+                                <flux:icon.check variant="mini" class="size-[17px] text-mint" />
+                            @elseif (! $firm->isActive())
+                                <x-panel.badge :color="$firm->status->color()" :dot="false">{{ $firm->status->label() }}</x-panel.badge>
+                            @endif
+                        </button>
+                    @empty
+                        <div class="px-3 py-6 text-center text-[13px] text-muted">Firma bulunamadı.</div>
+                    @endforelse
+                </div>
+            @endif
+
+            @if ($this->companies->isNotEmpty())
+                <div @class(['p-1.5', 'border-t border-line-3' => $this->total > 1])>
+                    <div class="px-2.5 pt-1.5 pb-1 text-[10.5px] font-bold tracking-[0.12em] text-muted-2">ŞİRKETLER</div>
+                    @foreach ($this->companies as $company)
+                        <a href="{{ route('companies.show', $company) }}" wire:navigate wire:key="co-{{ $company->id }}" x-on:click="open = false"
+                            class="flex items-center gap-3 rounded-[10px] px-2.5 py-2 hover:bg-[#F1F5FA]">
+                            <x-panel.avatar :initials="\App\Support\Text::initials($company->short_name)" size="sm" />
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-[13px] font-bold text-ink">{{ $company->short_name }}</span>
+                                <span class="block truncate text-[11.5px] text-muted-2">VKN {{ $company->tax_number }} · {{ $company->workplaces_count }} işyeri</span>
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="border-t border-line-3 px-4 py-2.5 text-[11.5px] text-muted-2">Seçili firma tüm panel ekranlarına uygulanır.</div>
+        </div>
     @endif
 </div>

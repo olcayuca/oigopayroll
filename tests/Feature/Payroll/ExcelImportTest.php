@@ -27,7 +27,8 @@ class ExcelImportTest extends PayrollTestCase
         $sheet = $spreadsheet->getSheet(0);
 
         $this->assertSame(['İşyerleri', 'Listeler', 'Açıklamalar'], $spreadsheet->getSheetNames());
-        $this->assertSame('Şirket Numarası *', $sheet->getCell('A1')->getValue());
+        $this->assertSame('İşyeri Tipi *', $sheet->getCell('A1')->getValue(), 'Columns follow the customer setup file.');
+        $this->assertSame('Şirket Adı', $sheet->getCell('B1')->getValue());
         $this->assertCount(count(ImportColumns::for(ImportType::Workplace)), array_filter($sheet->rangeToArray('A1:BZ1')[0]));
 
         $hazardColumn = $this->columnOf($sheet->rangeToArray('A1:BZ1')[0], 'Tehlike Sınıfı *');
@@ -107,6 +108,61 @@ class ExcelImportTest extends PayrollTestCase
         $this->assertSame(0, Company::withoutWorkplaces()->count());
     }
 
+    /**
+     * The customer's own setup file ("KURULUM DOSYASI.xlsx", Firma Bilgileri sheet) uploads as is:
+     * its headers, upper-case list values, "ÖRNEĞİN" hint cell and footnote row, company by name.
+     */
+    public function test_customer_setup_file_is_imported_as_is(): void
+    {
+        $firm = Firm::factory()->create();
+        Company::factory()->for($firm)->create(['company_no' => '7001', 'title' => 'Oigo Yazılım A.Ş.', 'short_name' => 'Oigo Yazılım']);
+
+        $headers = ['İş Yeri Tipi', 'Şirket Adı', 'İş Yeri Şube Adı', 'İş Yeri Numarası', 'İş Yeri Türü', 'Vergi No', 'Vergi Dairesi',
+            'SGK Kullanıcı Adı (TCKN)', 'Tehlike Sınıfı', 'İş Yerinin Çalışma ve Sosyal Güvenlik Bakanlığı İşkolu', 'İş Yeri SGK Numarası',
+            'Bağlı Bulunan SGK Müdürlüğü', 'SGK İş Yeri Yetkilisi Adı Soyadı', 'SGK Bildirge Kullanıcı Adı (TCKN)', 'SGK İş Yeri Kodu',
+            'SGK İş Yeri Şifresi', 'SGK Sistem Şifresi', 'E-Bildirge Yetkili Adı Soyadı', 'İŞKUR Kullanıcı Adı Soyadı',
+            'İŞKUR Kullanıcı Kodu (TCKN)', 'İŞKUR Şifre', 'İŞKUR Sicil Numarası', 'Vergi Dairesi Kullanıcı Kodu',
+            "Dijital Vergi Dairesi\nKullanıcı Adı", "Dijital Vergi Dairesi\nŞifre", "Dijital Vergi Dairesi\nParola", 'E-Beyanname Şifresi',
+            'NACE KODU', 'Emniyet(Karakol) Bildirimi E-MAİL', 'Emniyet(Karakol) Bildirimi Şifre', 'BES Firma Adı', 'BES Firma Kullanıcı Adı',
+            'BES Firma Şifre', 'Adres', 'İl', 'İlçe'];
+        $row = ['MERKEZ İŞ YERİ', 'Oigo Yazılım A.Ş.', 'Merkez Ofis', '001', 'Normal', TurkishIdentifiers::makeVkn('634012398'), 'Kozyatağı',
+            '10000000146', 'AZ TEHLİKELİ', '20 (GENEL İŞLER)', str_repeat('2', 26),
+            'Kadıköy SGM', 'Hakan Aydın', '10000000146', '1',
+            'Dd12345!', 'Ee12345!', 'Hakan Aydın', 'Hakan Aydın',
+            '10000000146', 'Ff12345!', '34-1029384', '6340123987',
+            'oigoyazilim', 'Aa12345!', 'Bb12345!', 'Cc12345!',
+            '62.01.01', 'bildirim@oigo.com.tr', 'Gg12345!', 'Anadolu Hayat Emeklilik', 'oigo.bes',
+            'Hh12345!', 'Barbaros Mah. Kardelen Sok. No:2', 'İstanbul', 'Ataşehir'];
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet()->setTitle('Firma Bilgileri');
+        $sheet->fromArray([$headers], null, 'A1');
+        $sheet->setCellValue('J2', 'ÖRNEĞİN: 20 (GENEL İŞLER)');
+        foreach ($row as $index => $value) {
+            $sheet->setCellValueExplicit([$index + 1, 3], $value, DataType::TYPE_STRING);
+        }
+        $sheet->setCellValue('H13', 'Kırmızı alanlar zorunludur.');
+        $path = tempnam(sys_get_temp_dir(), 'kur').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        $import = app(ImportService::class)->preview(ImportType::Workplace, $firm, $path, 'KURULUM DOSYASI.xlsx');
+
+        $this->assertSame([], $import->file_errors ?? []);
+        $this->assertSame(1, $import->total_rows, 'Hint cell and footnote rows are not data.');
+        $this->assertSame(0, $import->error_rows, json_encode($import->rows->pluck('errors')) ?: '');
+
+        app(ImportService::class)->confirm($import);
+
+        $workplace = Workplace::query()->sole();
+        $this->assertSame('Oigo Yazılım A.Ş.', $workplace->title, 'Title defaults to the company title.');
+        $this->assertSame(20, $workplace->labor_sector_id);
+        $this->assertSame('merkez', $workplace->workplace_type->value);
+        $this->assertSame('Bb12345!', $workplace->dvd_passphrase);
+        $this->assertSame('Hh12345!', $workplace->bes_password);
+        $this->assertSame([], $workplace->missingSetupFields());
+        $this->assertSame(100, $workplace->setupPercent());
+    }
+
     public function test_workplace_rows_must_reference_a_company_of_the_same_firm(): void
     {
         $firm = Firm::factory()->create();
@@ -169,26 +225,44 @@ class ExcelImportTest extends PayrollTestCase
     private function workplaceRow(string $companyNo, string $workplaceNo): array
     {
         return [
-            'Şirket Numarası *' => $companyNo,
+            'Şirket Numarası' => $companyNo,
             'İşyeri Numarası *' => $workplaceNo,
             'İşyeri Şube Adı *' => 'Merkez',
             'İşyeri Tipi *' => 'Merkez İşyeri',
             'İşyeri Türü *' => 'Ar-Ge',
-            'Ünvan *' => 'Örnek A.Ş.',
+            'Ünvan' => 'Örnek A.Ş.',
             'Vergi Numarası *' => TurkishIdentifiers::makeVkn('012345678'),
             'Vergi Dairesi *' => 'Kadıköy',
             'Tehlike Sınıfı *' => 'Çok Tehlikeli',
-            'ÇSGB İşkolu' => 'Metal',
+            'ÇSGB İşkolu *' => 'Metal',
+            'NACE Kodu *' => '24.10.01',
             'İl *' => 'İstanbul',
             'İlçe *' => 'Kadıköy',
             'İşyeri Açık Adresi *' => 'Moda Cad. No:1',
+            'İşyeri SGK Sicil Numarası *' => str_pad($companyNo.$workplaceNo, 26, '7', STR_PAD_LEFT),
+            'Bağlı Bulunulan SGK Müdürlüğü *' => 'Kadıköy SGM',
             'SGK İşyeri Yetkilisi Adı Soyadı *' => 'Ayşe Yılmaz',
             'SGK İşyeri Kodu *' => '000123',
             'e-Bildirge Yetkilisi Adı Soyadı *' => 'Ayşe Yılmaz',
-            'İşyeri Açılış Tarihi *' => '01.03.2021',
+            'İşyeri Açılış Tarihi' => '01.03.2021',
+            'SGK Kullanıcı Adı (TCKN) *' => '10000000146',
             'SGK Bildirge Kullanıcı Adı (TCKN) *' => '10000000146',
             'SGK İşyeri Şifresi *' => 'sgk-sifre',
             'SGK Sistem Şifresi *' => 'sistem-sifre',
+            'İŞKUR Kullanıcı Adı Soyadı *' => 'Ayşe Yılmaz',
+            'İŞKUR Kullanıcı Kodu (TCKN) *' => '10000000146',
+            'İŞKUR Şifresi *' => 'iskur-sifre',
+            'İŞKUR Sicil Numarası *' => '34-1029384',
+            'Vergi Dairesi Kullanıcı Kodu *' => '1234567890',
+            'Dijital Vergi Dairesi Kullanıcı Adı *' => 'ornekas',
+            'Dijital Vergi Dairesi Şifre *' => 'dvd-sifre',
+            'Dijital Vergi Dairesi Parola *' => 'dvd-parola',
+            'e-Beyanname Şifresi *' => 'ebeyan-sifre',
+            'Emniyet (Karakol) Bildirimi E-posta *' => 'bildirim@ornek.com.tr',
+            'Emniyet (Karakol) Bildirimi Şifre *' => 'emniyet-sifre',
+            'BES Firma Adı *' => 'Anadolu Hayat Emeklilik',
+            'BES Firma Kullanıcı Adı *' => 'ornek.bes',
+            'BES Firma Şifre *' => 'bes-sifre',
             'Sendikalı İşyeri' => 'Evet',
             'Sendika Adı' => 'Birleşik Metal-İş',
         ];

@@ -61,6 +61,10 @@ enum AuditEvent: string
     case WorkplaceDeleted = 'workplace.deleted';
     case CompanyRestored = 'company.restored';
     case WorkplaceRestored = 'workplace.restored';
+    case EmployeeCreated = 'employee.created';
+    case EmployeeUpdated = 'employee.updated';
+    case EmployeeDeleted = 'employee.deleted';
+    case DefinitionChanged = 'definition.changed';
     case RecordPurged = 'system.record_purged';
     case DataExported = 'system.data_exported';
     case BackupCreated = 'system.backup_created';
@@ -132,6 +136,10 @@ enum AuditEvent: string
             self::WorkplaceDeleted => 'İşyeri silindi',
             self::CompanyRestored => 'Şirket geri alındı',
             self::WorkplaceRestored => 'İşyeri geri alındı',
+            self::EmployeeCreated => 'Personel oluşturuldu',
+            self::EmployeeUpdated => 'Personel güncellendi',
+            self::EmployeeDeleted => 'Personel silindi',
+            self::DefinitionChanged => 'Tanım değiştirildi',
             self::RecordPurged => 'Kayıt kalıcı olarak silindi',
             self::DataExported => 'Excel dışa aktarma',
             self::BackupCreated => 'Veritabanı yedeği alındı',
@@ -173,6 +181,8 @@ enum AuditEvent: string
             'access' => 'Yetki',
             'company' => 'Şirket',
             'workplace' => 'İşyeri',
+            'employee' => 'Personel',
+            'definition' => 'Tanımlar',
             'import' => 'Aktarım',
             'system' => 'Sistem',
             'kvkk' => 'KVKK',

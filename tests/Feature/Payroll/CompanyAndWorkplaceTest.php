@@ -120,8 +120,41 @@ class CompanyAndWorkplaceTest extends PayrollTestCase
             );
         }
 
-        // The same workplace number is fine under another company.
-        $this->assertInstanceOf(Workplace::class, app(SaveWorkplace::class)->create(Company::factory()->create(), $this->workplaceInput()));
+        // The same workplace number is fine under another company (the SGK sicil stays unique everywhere).
+        $this->assertInstanceOf(Workplace::class, app(SaveWorkplace::class)->create(Company::factory()->create(), $this->workplaceInput([
+            'sgk_registry_no' => str_repeat('8', 26),
+        ])));
+
+        // Every column of the customer setup file is required; the title falls back to the company.
+        try {
+            app(SaveWorkplace::class)->create($company, $this->workplaceInput([
+                'workplace_no' => '2', 'sgk_registry_no' => str_repeat('9', 26), 'title' => null,
+                'nace_code' => null, 'bes_password' => null, 'police_email' => 'gecersiz', 'labor_sector_id' => null,
+            ]));
+            $this->fail('Expected validation to fail.');
+        } catch (ValidationException $e) {
+            $this->assertEqualsCanonicalizing(['nace_code', 'bes_password', 'police_email', 'labor_sector_id'], array_keys($e->errors()));
+        }
+    }
+
+    public function test_update_requires_setup_credentials_that_were_never_stored(): void
+    {
+        $workplace = Workplace::factory()->for(Company::factory())->create(['bes_password' => null]);
+        $input = $this->workplaceInput(['sgk_registry_no' => $workplace->sgk_registry_no]);
+        foreach (Workplace::SECRET_FIELDS as $field) {
+            $input[$field] = null; // blank in the form
+        }
+
+        try {
+            app(SaveWorkplace::class)->update($workplace, $input);
+            $this->fail('Expected validation to fail.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['bes_password'], array_keys($e->errors()), 'Stored credentials are kept, the missing one is asked for.');
+        }
+
+        app(SaveWorkplace::class)->update($workplace, [...$input, 'bes_password' => 'yeni-bes']);
+        $this->assertSame('yeni-bes', $workplace->fresh()?->bes_password);
+        $this->assertSame(100, $workplace->fresh()?->setupPercent());
     }
 
     public function test_natural_person_workplace_may_use_tckn_as_tax_number(): void

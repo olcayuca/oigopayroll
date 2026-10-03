@@ -78,6 +78,14 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/{workplace}', 'pages::panel.workplaces.show')->name('workplaces.show');
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
 
+        Route::livewire('kurulum', 'pages::panel.setup.wizard')->name('setup.wizard');
+        Route::livewire('tanimlar', 'pages::panel.definitions.index')->name('definitions.index');
+
+        Route::livewire('personel', 'pages::panel.employees.index')->name('employees.index');
+        Route::livewire('personel/yeni', 'pages::panel.employees.form')->name('employees.create');
+        Route::livewire('personel/{employee}', 'pages::panel.employees.show')->name('employees.show');
+        Route::livewire('personel/{employee}/duzenle', 'pages::panel.employees.form')->name('employees.edit');
+
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
         Route::livewire('belgeler', 'pages::panel.documents.index')->name('documents.index');
         Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri'])->name('exports.download');

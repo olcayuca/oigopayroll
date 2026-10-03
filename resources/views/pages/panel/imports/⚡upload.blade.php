@@ -96,13 +96,13 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         }
 
         $import->refresh();
-        $label = $this->importType === ImportType::Company ? 'şirket' : 'işyeri';
+        $label = mb_strtolower($this->importType->label());
         Flux::toast(variant: 'success', text: collect([
             $import->created_rows ? "{$import->created_rows} {$label} oluşturuldu" : null,
             $import->updated_rows ? "{$import->updated_rows} {$label} güncellendi" : null,
         ])->filter()->implode(', ') ?: 'Değişiklik yapılmadı.');
 
-        $this->redirectRoute($this->importType === ImportType::Company ? 'companies.index' : 'workplaces.index', navigate: true);
+        $this->redirectRoute($this->importType->indexRoute(), navigate: true);
     }
 
     public function startOver(ImportService $importService): void
@@ -123,42 +123,55 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
     #[Computed]
     public function previewColumns(): array
     {
-        return $this->importType === ImportType::Company
-            ? ['company_no' => 'Şirket No', 'title' => 'Unvan', 'tax_number' => 'Vergi No']
-            : ['company_no' => 'Şirket No', 'workplace_no' => 'İşyeri No', 'branch_name' => 'Şube Adı', 'sgk_registry_no' => 'SGK Sicil No'];
+        return match ($this->importType) {
+            ImportType::Company => ['company_no' => 'Şirket No', 'title' => 'Unvan', 'tax_number' => 'Vergi No'],
+            ImportType::Employee => ['registry_no' => 'Sicil No', 'first_name' => 'Adı', 'last_name' => 'Soyadı', 'company_name' => 'Firma', 'workplace_name' => 'Şube'],
+            default => ['company_no' => 'Şirket No', 'company_name' => 'Şirket', 'workplace_no' => 'İşyeri No', 'branch_name' => 'Şube Adı', 'sgk_registry_no' => 'SGK Sicil No'],
+        };
     }
 
     /**
-     * @return class-string<Company|Workplace>
+     * @return class-string
      */
     private function modelClass(): string
     {
-        return ImportType::from($this->type) === ImportType::Company ? Company::class : Workplace::class;
+        return ImportType::from($this->type)->modelClass();
+    }
+
+    /**
+     * How existing rows are matched, for the help text.
+     */
+    public function matchText(): string
+    {
+        return match ($this->importType) {
+            ImportType::Company => 'şirket numarası',
+            ImportType::Employee => 'sicil numarası',
+            default => 'şirket + işyeri numarası',
+        };
     }
 }; ?>
 
-<div class="flex w-full flex-1 flex-col gap-6">
-    <flux:breadcrumbs>
-        @if ($this->importType === \App\Enums\ImportType::Company)
-            <flux:breadcrumbs.item :href="route('companies.index')" wire:navigate>Şirketler</flux:breadcrumbs.item>
-        @else
-            <flux:breadcrumbs.item :href="route('workplaces.index')" wire:navigate>İşyerleri</flux:breadcrumbs.item>
-        @endif
-        <flux:breadcrumbs.item>Excel ile Aktarım</flux:breadcrumbs.item>
-    </flux:breadcrumbs>
+<div>
+    <x-panel.page-header
+        :crumbs="[match ($this->importType) {
+            \App\Enums\ImportType::Company => 'Şirketler',
+            \App\Enums\ImportType::Employee => 'Personel',
+            default => 'İşyerleri',
+        } => route($this->importType->indexRoute()), 'Excel ile Aktarım' => null]"
+        :back="route($this->importType->indexRoute())"
+        :title="'Excel ile Toplu '.$this->importType->label().' Ekleme / Güncelleme'"
+        subtitle="Şablonu indir → Excel'i doldur → Yükle → Kontrol / önizleme → Onayla. Onay verilmeden hiçbir kayıt oluşturulmaz veya değiştirilmez." />
 
-    <div>
-        <flux:heading size="xl">Excel ile Toplu {{ $this->importType->label() }} Ekleme / Güncelleme</flux:heading>
-        <flux:text class="mt-1">
-            Şablonu İndir → Excel'i Doldur → Yükle → Kontrol / Önizleme → Onayla.
-            Onay verilmeden hiçbir kayıt oluşturulmaz veya değiştirilmez.
-        </flux:text>
-        <flux:text class="mt-1">
-            Mevcut kayıtları toplu güncellemek için listedeki <strong>Excel İndir</strong> ile aldığınız dosyayı düzenleyip yükleyin:
-            {{ $this->importType === \App\Enums\ImportType::Company ? 'şirket numarası' : 'şirket numarası + işyeri numarası' }} eşleşen satırlar güncellenir,
-            diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir; şifre sütunları boş veya yoksa mevcut şifreler korunur.
-        </flux:text>
-    </div>
+    <x-panel.alert variant="info" class="mb-5">
+        @if ($this->importType === \App\Enums\ImportType::Employee || $this->importType === \App\Enums\ImportType::Workplace)
+            Müşterinin <strong>KURULUM DOSYASI</strong> olduğu gibi yüklenebilir; dosyada birden fazla sayfa varsa ilgili sayfa ({{ $this->importType === \App\Enums\ImportType::Employee ? 'Personel Bilgileri' : 'Firma Bilgileri' }}) otomatik seçilir.
+        @endif
+        {{ ucfirst($this->matchText()) }} eşleşen satırlar güncellenir, diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir;
+        şifreli alanların (şifreler{{ $this->importType === \App\Enums\ImportType::Employee ? ', TCKN, IBAN, hesap no' : '' }}) sütunları boş veya yoksa mevcut değerler korunur.
+        @if ($this->importType === \App\Enums\ImportType::Employee)
+            Birim, üst birim, unvan, pozisyon gibi tanımlar listede yoksa onayda otomatik oluşturulur.
+        @endif
+    </x-panel.alert>
 
     @if (! $this->import || $this->import->status === \App\Enums\ImportStatus::Cancelled)
         <x-import-upload :template-url="route('imports.template', $this->importType->slug())" />

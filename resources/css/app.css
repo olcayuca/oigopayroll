@@ -26,6 +26,55 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* Panel (panel.siteadi.com) design tokens — see docs/ARAYUZ_KURALLARI.md §3 */
+    --font-panel: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+    --color-brand: #163B66;
+    --color-brand-hover: #1D4C82;
+    --color-brand-soft: #EAF0F8;
+    --color-mint: #11A795;
+    --color-mint-strong: #0E8474;
+    --color-mint-soft: #EAF7F4;
+    --color-mint-light: #6FE3CF;
+    --color-side: #0E2038;
+    --color-side-2: #112844;
+    --color-side-text: #9FB0C7;
+    --color-side-heading: #5C7295;
+    --color-ink: #15233B;
+    --color-ink-2: #3B4A60;
+    --color-ink-3: #2B3A50;
+    --color-muted: #69788C;
+    --color-muted-2: #8493A8;
+    --color-faint: #9AA8BC;
+    --color-line: #EAEEF4;
+    --color-line-2: #E0E6EE;
+    --color-line-3: #EEF2F7;
+    --color-line-4: #F0F3F8;
+    --color-canvas: #F3F6FB;
+    --color-field: #FBFCFE;
+    --color-row-hover: #F7FAFD;
+    --color-head: #FAFBFD;
+    --color-seg: #F1F4F9;
+
+    --color-st-green: #0E8474;
+    --color-st-green-bg: #EAF7F4;
+    --color-st-green-dot: #11A795;
+    --color-st-amber: #B07217;
+    --color-st-amber-bg: #FCF3E4;
+    --color-st-amber-dot: #D98A1F;
+    --color-st-red: #A8332F;
+    --color-st-red-bg: #FBECEB;
+    --color-st-red-dot: #D24B47;
+    --color-st-gray: #5A6B81;
+    --color-st-gray-bg: #EFF1F5;
+    --color-st-gray-dot: #9AA8BC;
+    --color-st-navy: #163B66;
+    --color-st-navy-bg: #EAF0F8;
+    --color-st-navy-dot: #163B66;
+    --color-st-blue: #2461BD;
+    --color-st-blue-bg: #E9F1FC;
+    --color-st-blue-dot: #2D6FD1;
 }
 
 @layer theme {
@@ -60,6 +109,203 @@ textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
+
+/*
+ * Panel theme. The panel layout puts `.oigo` on <html>; Flux components inside it pick up the
+ * panel palette through the zinc/accent variables, so the admin portal is left untouched.
+ */
+@layer theme {
+    .oigo {
+        --color-zinc-50: #F7F9FC;
+        --color-zinc-100: #F1F4F9;
+        --color-zinc-200: #E0E6EE;
+        --color-zinc-300: #CBD5E1;
+        --color-zinc-400: #9AA8BC;
+        --color-zinc-500: #69788C;
+        --color-zinc-600: #5A6B81;
+        --color-zinc-700: #3B4A60;
+        --color-zinc-800: #15233B;
+        --color-zinc-900: #0E2038;
+        --color-zinc-950: #0A1628;
+
+        --color-accent: #163B66;
+        --color-accent-content: #163B66;
+        --color-accent-foreground: #FFFFFF;
+    }
+}
+
+.oigo body {
+    font-family: var(--font-panel);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+}
+
+.oigo [data-flux-control].h-10,
+.oigo select[data-flux-control]:not([multiple]) {
+    height: 2.75rem;
+}
+
+.oigo input[data-flux-control],
+.oigo select[data-flux-control],
+.oigo textarea[data-flux-control],
+.oigo button[data-flux-control] {
+    border-width: 1.5px;
+    border-color: var(--color-line-2);
+    border-radius: 10px;
+    background-color: var(--color-field);
+    box-shadow: none;
+    color: var(--color-ink);
+}
+
+.oigo input[data-flux-control]:disabled,
+.oigo select[data-flux-control]:disabled,
+.oigo textarea[data-flux-control]:disabled {
+    background-color: var(--color-canvas);
+    color: var(--color-muted);
+}
+
+.oigo input:focus[data-flux-control],
+.oigo textarea:focus[data-flux-control],
+.oigo select:focus[data-flux-control] {
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-ring-offset-shadow: 0 0 #0000;
+    border-color: var(--color-brand);
+    background-color: #fff;
+}
+
+.oigo input[data-flux-control][data-invalid],
+.oigo textarea[data-flux-control][data-invalid],
+.oigo select[data-flux-control][data-invalid] {
+    border-color: #E3A3A0;
+    background-color: #FFF8F7;
+}
+
+.oigo [data-flux-label] {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-ink-2);
+}
+
+/* Required fields get the red asterisk of the design (and of the customer's setup file). */
+.oigo [data-flux-field]:has(:is(input, select, textarea)[required]) > [data-flux-label]::after {
+    content: ' *';
+    color: #D24B47;
+    font-weight: 800;
+}
+
+.oigo [data-flux-description] {
+    font-size: 12px;
+    color: var(--color-muted-2);
+}
+
+.oigo [data-flux-error] {
+    font-size: 12px;
+    font-weight: 600;
+    color: #C13E3A;
+}
+
+.oigo [data-flux-button] {
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.oigo [data-flux-button][data-flux-group-target],
+.oigo [data-flux-button].h-10 {
+    height: 2.625rem;
+}
+
+.oigo [data-flux-button].bg-\[var\(--color-accent\)\] {
+    box-shadow: 0 5px 14px rgba(22, 59, 102, 0.22);
+}
+
+.oigo [data-flux-button].bg-\[var\(--color-accent\)\]:hover {
+    background-color: var(--color-brand-hover);
+}
+
+.oigo [data-flux-modal] > dialog,
+.oigo dialog[data-flux-modal] {
+    border-radius: 16px;
+}
+
+.oigo [data-flux-heading] {
+    color: var(--color-ink);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+/* Flux tables in the panel look like the panel list cards (x-panel.table). */
+.oigo div:has(> ui-table-scroll-area > [data-flux-table]) {
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(16, 40, 72, 0.04);
+}
+
+.oigo [data-flux-table] th[data-flux-column] {
+    padding: 11px 14px;
+    border-bottom: 0;
+    background: var(--color-head);
+    color: var(--color-muted-2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.oigo [data-flux-table] td[data-flux-cell] {
+    padding: 13px 14px;
+    border-color: var(--color-line-4);
+    color: var(--color-ink-2);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.oigo [data-flux-table] th[data-flux-column]:first-child,
+.oigo [data-flux-table] td[data-flux-cell]:first-child {
+    padding-inline-start: 18px;
+}
+
+.oigo [data-flux-table] th[data-flux-column]:last-child,
+.oigo [data-flux-table] td[data-flux-cell]:last-child {
+    padding-inline-end: 18px;
+}
+
+.oigo [data-flux-table] tbody tr[data-flux-row] td[data-flux-cell] {
+    border-top: 1px solid var(--color-line-4);
+}
+
+.oigo [data-flux-table] tr[data-flux-row]:hover > td[data-flux-cell] {
+    background: var(--color-row-hover);
+}
+
+.oigo div:has(> ui-table-scroll-area > [data-flux-table]) > :not(ui-table-scroll-area) {
+    border-top: 1px solid var(--color-line-3);
+    padding: 10px 18px;
+}
+
+.oigo [data-flux-heading].text-2xl {
+    font-size: 25px;
+    letter-spacing: -0.02em;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@keyframes oigo-fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.oigo-fade-up {
+    animation: oigo-fade-up .25s ease;
+}
+
+.oigo ::-webkit-scrollbar { width: 10px; height: 8px; }
+.oigo ::-webkit-scrollbar-thumb { background: #cdd6e2; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+.oigo .oigo-side ::-webkit-scrollbar-thumb,
+.oigo .oigo-side::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); background-clip: padding-box; }
 
 /* \[:where(&)\]:size-4 {
     @apply size-4;

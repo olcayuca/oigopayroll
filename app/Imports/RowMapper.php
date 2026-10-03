@@ -36,6 +36,8 @@ class RowMapper
             ImportType::Firm => ['data' => $row, 'errors' => []],
             ImportType::Company => $this->company($row),
             ImportType::Workplace => $this->workplace($row),
+            // Personnel values are normalised with the firm context (EmployeeInput) in ImportService.
+            ImportType::Employee => ['data' => $row, 'errors' => []],
         };
     }
 
@@ -106,8 +108,9 @@ class RowMapper
 
         $text = is_scalar($value) ? (string) $value : '';
 
-        if ($model === LaborSector::class && ctype_digit($text) && in_array((int) $text, $this->lookups[$cacheKey], true)) {
-            return (int) $text;
+        // İşkolu by number: "20", "20 (GENEL İŞLER)", "20 - Genel İşler"
+        if ($model === LaborSector::class && preg_match('/^\s*(\d+)\b/', $text, $number) && in_array((int) $number[1], $this->lookups[$cacheKey], true)) {
+            return (int) $number[1];
         }
 
         $id = $this->lookups[$cacheKey][Text::key($text)] ?? null;

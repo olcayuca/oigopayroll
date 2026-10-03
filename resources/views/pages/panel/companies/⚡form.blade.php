@@ -99,33 +99,48 @@ new #[Title('Şirket')] class extends PanelComponent {
     }
 }; ?>
 
-<div class="flex w-full flex-1 flex-col gap-6">
-    <flux:breadcrumbs>
-        <flux:breadcrumbs.item :href="route('companies.index')" wire:navigate>Şirketler</flux:breadcrumbs.item>
-        @if ($company)
-            <flux:breadcrumbs.item :href="route('companies.show', $company)" wire:navigate>{{ $company->short_name }}</flux:breadcrumbs.item>
-            <flux:breadcrumbs.item>Düzenle</flux:breadcrumbs.item>
-        @else
-            <flux:breadcrumbs.item>Yeni Şirket</flux:breadcrumbs.item>
-        @endif
-    </flux:breadcrumbs>
+<div>
+    @php
+        $formTabs = ['sirket' => 'Şirket Bilgileri', 'diger' => 'Diğer Bilgiler'];
+        $tabIndex = array_search($tab, array_keys($formTabs), true);
+    @endphp
 
-    <flux:heading size="xl">{{ $company ? 'Şirketi Düzenle' : 'Yeni Şirket' }}</flux:heading>
+    <x-panel.page-header
+        :crumbs="$company
+            ? ['Şirketler' => route('companies.index'), $company->short_name => route('companies.show', $company), 'Düzenle' => null]
+            : ['Şirketler' => route('companies.index'), 'Yeni kayıt' => null]"
+        :back="$company ? route('companies.show', $company) : route('companies.index')"
+        :initials="$company ? \App\Support\Text::initials($company->short_name) : null"
+        :title="$company ? $company->title : 'Yeni Şirket'"
+        :subtitle="$company ? 'No '.$company->company_no.' · VKN '.$company->tax_number : 'Zorunlu alanlar tamamlanmadan şirket kaydı oluşturulamaz.'">
+        <x-slot:badge>
+            <x-panel.badge :color="$company ? 'navy' : 'blue'">{{ $company ? 'Düzenleniyor' : 'Yeni kayıt' }}</x-panel.badge>
+        </x-slot:badge>
+        <x-slot:actions>
+            <flux:button :href="$company ? route('companies.show', $company) : route('companies.index')" wire:navigate>Vazgeç</flux:button>
+            <flux:button type="submit" form="company-form" variant="primary">{{ $company ? 'Değişiklikleri Kaydet' : 'Şirketi Oluştur' }}</flux:button>
+        </x-slot:actions>
+    </x-panel.page-header>
 
     @error('firm')
-        <flux:callout icon="exclamation-triangle" color="red" :heading="$message" />
+        <x-panel.alert variant="danger" :title="$message" class="mb-4" />
     @enderror
 
-    <form wire:submit="save" class="max-w-4xl space-y-6">
-        <x-tabs :active="$tab" :invalid="$this->invalidTabs()"
-            :tabs="['sirket' => 'Şirket Bilgileri (zorunlu)', 'diger' => 'Diğer Bilgiler']" />
+    @if ($this->invalidTabs() !== [])
+        <x-panel.alert variant="danger" class="mb-4" title="Formda düzeltilmesi gereken alanlar var.">
+            Kırmızı işaretli sekmelerdeki alanları kontrol edin.
+        </x-panel.alert>
+    @endif
+
+    <form id="company-form" wire:submit="save" class="max-w-4xl rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(16,40,72,0.04)]">
+        <x-tabs :active="$tab" :invalid="$this->invalidTabs()" :tabs="$formTabs" class="px-[22px]" />
 
         @if ($tab === 'sirket')
-        <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-            <flux:text>Zorunlu alanlar tamamlanmadan şirket kaydı oluşturulamaz.</flux:text>
+        <section class="space-y-5 p-6">
+            <flux:heading class="!text-[17px]">Şirket Bilgileri</flux:heading>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <flux:input wire:model="form.company_no" label="Şirket Numarası" required description="Sistem genelinde benzersiz olmalıdır." />
+                <flux:input wire:model="form.company_no" label="Şirket Numarası" required description:trailing="Sistem genelinde benzersiz olmalıdır." />
                 <flux:input wire:model="form.short_name" label="Şirket Kısa Adı" required />
                 <div class="sm:col-span-2">
                     <flux:input wire:model="form.title" label="Şirket Adı / Unvanı" required />
@@ -143,21 +158,24 @@ new #[Title('Şirket')] class extends PanelComponent {
                     @endforeach
                 </flux:select>
                 <flux:input wire:model="form.tax_number" label="Vergi Numarası" required inputmode="numeric" maxlength="11"
-                    :description="$form['company_type'] === 'sahis' ? 'Şahıs firmasında 11 haneli T.C. kimlik numarası da girilebilir.' : '10 haneli vergi kimlik numarası.'" />
+                    :description:trailing="$form['company_type'] === 'sahis' ? 'Şahıs firmasında 11 haneli T.C. kimlik numarası da girilebilir.' : '10 haneli vergi kimlik numarası.'" />
                 <flux:input wire:model="form.tax_office" label="Vergi Dairesi" required />
             </div>
         </section>
         @endif
 
         @if ($tab === 'diger')
-        <section class="space-y-4 rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-            <flux:text>Bu bilgiler zorunlu değildir.</flux:text>
+        <section class="space-y-5 p-6">
+            <div>
+                <flux:heading class="!text-[17px]">Diğer Bilgiler</flux:heading>
+                <flux:text class="mt-1">Bu bilgiler zorunlu değildir.</flux:text>
+            </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="form.website" label="Web Adresi" placeholder="https://" />
                 <flux:input wire:model="form.kep_address" label="KEP Adresi" />
                 <flux:input wire:model="form.trade_registry_no" label="Ticaret Sicil Numarası" />
-                <flux:input wire:model="form.mersis_no" label="MERSİS Numarası" inputmode="numeric" maxlength="16" description="16 hane." />
+                <flux:input wire:model="form.mersis_no" label="MERSİS Numarası" inputmode="numeric" maxlength="16" description:trailing="16 hane." />
                 <flux:input wire:model="form.phone" label="Telefon" />
                 <div class="sm:col-span-2">
                     <flux:textarea wire:model="form.address" label="Adres" rows="2" />
@@ -166,9 +184,6 @@ new #[Title('Şirket')] class extends PanelComponent {
         </section>
         @endif
 
-        <div class="flex justify-end gap-2">
-            <flux:button :href="$company ? route('companies.show', $company) : route('companies.index')" wire:navigate>Vazgeç</flux:button>
-            <flux:button type="submit" variant="primary">{{ $company ? 'Kaydet' : 'Şirketi Oluştur' }}</flux:button>
-        </div>
+        <x-panel.form-footer :tabs="$formTabs" :index="$tabIndex" />
     </form>
 </div>

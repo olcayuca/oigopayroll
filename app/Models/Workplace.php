@@ -97,7 +97,8 @@ use Illuminate\Support\Carbon;
     'opening_date', 'closing_date', 'mahiyet_code', 'mahiyet_name', 'iskur_user_name', 'iskur_registry_no',
     'tuik_user_full_name', 'tuik_username', 'tax_office_user_code', 'sgk_declaration_username',
     'sgk_workplace_password', 'sgk_system_password', 'iskur_user_code', 'iskur_password', 'tuik_password',
-    'ebeyanname_password', 'has_union', 'union_name', 'cba_start_date', 'cba_end_date', 'cba_signed_date', 'created_by',
+    'ebeyanname_password', 'nace_code', 'sgk_username', 'dvd_username', 'dvd_password', 'dvd_passphrase',
+    'police_email', 'police_password', 'bes_company_name', 'bes_username', 'bes_password', 'has_union', 'union_name', 'cba_start_date', 'cba_end_date', 'cba_signed_date', 'created_by',
 ])]
 #[Hidden(Workplace::SECRET_FIELDS)]
 class Workplace extends Model
@@ -116,7 +117,20 @@ class Workplace extends Model
         'iskur_password',
         'tuik_password',
         'ebeyanname_password',
+        'sgk_username',
+        'dvd_password',
+        'dvd_passphrase',
+        'police_password',
+        'bes_password',
     ];
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
     /**
      * @return BelongsTo<Company, $this>
@@ -156,6 +170,68 @@ class Workplace extends Model
     public function laborSector(): BelongsTo
     {
         return $this->belongsTo(LaborSector::class);
+    }
+
+    /**
+     * The 36 columns of the customer's setup file ("KURULUM DOSYASI", Firma Bilgileri sheet), all of
+     * them required there, grouped like the workplace tabs. "a|b" means either column counts.
+     * Records created before these became required (or imported as updates) may still miss some;
+     * the setup ratio shows how many are filled.
+     */
+    public const SETUP_FIELDS = [
+        'genel' => ['workplace_type', 'company_id', 'branch_name', 'workplace_no', 'workplace_kind', 'nace_code', 'hazard_class', 'labor_sector_id'],
+        'vergi' => ['tax_number', 'tax_office', 'tax_office_user_code', 'dvd_username', 'dvd_password', 'dvd_passphrase', 'ebeyanname_password'],
+        'sgk' => ['sgk_registry_no', 'sgk_directorate', 'sgk_officer_name', 'sgk_username', 'sgk_declaration_username', 'sgk_workplace_code',
+            'sgk_workplace_password', 'sgk_system_password', 'ebildirge_officer_name'],
+        'iskur' => ['iskur_user_name', 'iskur_user_code', 'iskur_password', 'iskur_registry_no'],
+        'emniyet' => ['police_email', 'police_password', 'bes_company_name', 'bes_username', 'bes_password'],
+        'adres' => ['address', 'province_id|province_name', 'district_id|district_name'],
+    ];
+
+    /**
+     * Missing setup fields (SETUP_FIELDS entries). Encrypted credentials are checked without decrypting.
+     *
+     * @return list<string>
+     */
+    public function missingSetupFields(): array
+    {
+        $attributes = $this->getAttributes();
+
+        return array_values(array_filter(
+            array_merge(...array_values(self::SETUP_FIELDS)),
+            fn (string $entry) => collect(explode('|', $entry))->every(fn (string $column) => blank($attributes[$column] ?? null)),
+        ));
+    }
+
+    /**
+     * Workplaces with at least one empty setup field.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeIncompleteSetup(Builder $query): void
+    {
+        $query->where(function (Builder $query) {
+            foreach (array_merge(...array_values(self::SETUP_FIELDS)) as $entry) {
+                $query->orWhere(function (Builder $query) use ($entry) {
+                    foreach (explode('|', $entry) as $column) {
+                        // '' only exists in text columns.
+                        $query->where(fn (Builder $query) => str_ends_with($column, '_id')
+                            ? $query->whereNull($column)
+                            : $query->whereNull($column)->orWhere($column, ''));
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Setup completion in percent (0–100).
+     */
+    public function setupPercent(): int
+    {
+        $total = count(array_merge(...array_values(self::SETUP_FIELDS)));
+
+        return (int) floor(($total - count($this->missingSetupFields())) * 100 / $total);
     }
 
     /**

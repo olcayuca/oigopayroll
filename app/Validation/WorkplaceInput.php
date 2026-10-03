@@ -2,6 +2,7 @@
 
 namespace App\Validation;
 
+use App\Models\Company;
 use App\Models\District;
 use App\Models\Province;
 use App\Support\Text;
@@ -11,7 +12,7 @@ use App\Support\Text;
  *
  * İl / ilçe may arrive as ids (form dropdowns) or as text (manual entry, Excel). Text that
  * matches a known province / district is converted to its id; otherwise it is kept as the
- * manually entered name, as the spec allows.
+ * manually entered name, as the spec allows. A blank title (ünvan) falls back to the company title.
  */
 final class WorkplaceInput
 {
@@ -19,9 +20,13 @@ final class WorkplaceInput
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
-    public static function normalize(array $input): array
+    public static function normalize(array $input, ?Company $company = null): array
     {
         $input = array_map(fn ($value) => is_string($value) ? (trim($value) === '' ? null : trim($value)) : $value, $input);
+
+        if ($company !== null && blank($input['title'] ?? null)) {
+            $input['title'] = $company->title;
+        }
 
         if (empty($input['province_id']) && ! empty($input['province_name']) && is_string($input['province_name'])) {
             $province = self::findProvince($input['province_name']);

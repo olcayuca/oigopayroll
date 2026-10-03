@@ -24,12 +24,12 @@ class PermissionTemplateSeeder extends Seeder
             'Bordro Uzmanı' => [
                 'Şirket/işyeri yönetimi ve bordro işlemleri; kullanıcı yönetimi hariç.',
                 array_values(array_filter(Permission::cases(), fn (Permission $p) => ! in_array($p, [
-                    Permission::FirmManageUsers, Permission::CompanyDelete, Permission::WorkplaceDelete,
+                    Permission::FirmManageUsers, Permission::CompanyDelete, Permission::WorkplaceDelete, Permission::EmployeeDelete,
                 ], true))),
             ],
             'Sadece Görüntüleme' => [
                 'Kayıtları ve bordroları görüntüleyip indirebilir.',
-                [Permission::FirmView, Permission::CompanyView, Permission::WorkplaceView, Permission::PayrollView, Permission::PayrollDownload],
+                [Permission::FirmView, Permission::CompanyView, Permission::WorkplaceView, Permission::EmployeeView, Permission::PayrollView, Permission::PayrollDownload],
             ],
         ];
 

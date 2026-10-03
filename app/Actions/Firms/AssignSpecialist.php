@@ -101,7 +101,7 @@ class AssignSpecialist
     public static function defaultPermissions(): array
     {
         return array_values(array_filter(Permission::cases(), fn (Permission $permission) => ! in_array($permission, [
-            Permission::FirmManageUsers, Permission::CompanyDelete, Permission::WorkplaceDelete,
+            Permission::FirmManageUsers, Permission::CompanyDelete, Permission::WorkplaceDelete, Permission::EmployeeDelete,
         ], true)));
     }
 

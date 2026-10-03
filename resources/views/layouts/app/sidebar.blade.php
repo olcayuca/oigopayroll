@@ -10,11 +10,8 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            @if (\App\Enums\Portal::fromHost(request()->getHost()) === \App\Enums\Portal::Admin)
-                @include('layouts.app.nav.admin')
-            @else
-                @include('layouts.app.nav.panel')
-            @endif
+            {{-- The panel portal uses layouts/panel.blade.php; this sidebar serves the admin portal. --}}
+            @include('layouts.app.nav.admin')
 
             <flux:spacer />
 

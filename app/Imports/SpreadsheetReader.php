@@ -37,11 +37,18 @@ class SpreadsheetReader
             return ['errors' => ['Dosya okunamadı. Lütfen sistemden indirilen Excel şablonunu kullanın.'], 'columns' => [], 'rows' => []];
         }
 
-        $sheet = $spreadsheet->getSheet(0);
+        $headerMap = ImportColumns::headerMap($type);
+
+        // A workbook may hold several sheets (the customer setup file has "Firma Bilgileri" and
+        // "Personel Bilgileri"): read the one whose headers match this import best.
+        $sheet = collect($spreadsheet->getAllSheets())->sortByDesc(function ($candidate) use ($headerMap) {
+            $headers = $candidate->rangeToArray('A1:'.$candidate->getHighestDataColumn().'1', null, false, false)[0] ?? [];
+
+            return count(array_filter($headers, fn ($header) => is_scalar($header) && isset($headerMap[Text::key(str_replace('*', '', (string) $header))])));
+        })->first() ?? $spreadsheet->getSheet(0);
         $highestColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
         $highestRow = $sheet->getHighestDataRow();
 
-        $headerMap = ImportColumns::headerMap($type);
         $columns = [];
         $foundKeys = [];
         $errors = [];
@@ -82,7 +89,12 @@ class SpreadsheetReader
                     $values[$field->key] = $this->convert($field, $sheet->getCell([$col, $row])->getValue());
                 }
 
-                if (array_filter($values, fn ($value) => $value !== null) !== []) {
+                // The customer's personnel sheet keeps its dropdown lists in the first rows (Doktora, Lisans…):
+                // a row without any identity (sicil, TCKN, ad, soyad) is not a person.
+                $isListRow = $type === ImportType::Employee
+                    && collect(['registry_no', 'tckn', 'first_name', 'last_name'])->every(fn ($key) => ($values[$key] ?? null) === null);
+
+                if (! $isListRow && array_filter($values, fn ($value) => $value !== null && ! self::isNote($value)) !== []) {
                     $rows[$row] = $values;
                 }
             }
@@ -97,9 +109,24 @@ class SpreadsheetReader
         return ['errors' => $errors, 'columns' => array_keys($foundKeys), 'rows' => $rows];
     }
 
+    /**
+     * Example / instruction texts customers leave in their sheets ("ÖRNEĞİN: 20 (GENEL İŞLER)",
+     * "Kırmızı alanlar zorunludur.") are not data.
+     */
+    private static function isNote(mixed $value): bool
+    {
+        if (! is_string($value)) {
+            return false;
+        }
+
+        $text = mb_strtolower(strtr(trim($value), ['I' => 'ı', 'İ' => 'i']));
+
+        return preg_match('/^(örneğin\b|örnek\s*:|örn\s*[:.]|kırmızı alanlar|zorunlu alanlar)/u', $text) === 1;
+    }
+
     private function convert(Field $field, mixed $value): mixed
     {
-        if ($value === null || (is_string($value) && trim($value) === '')) {
+        if ($value === null || (is_string($value) && trim($value) === '') || self::isNote($value)) {
             return null;
         }
 

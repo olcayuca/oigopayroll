@@ -15,9 +15,31 @@ new #[Title('Şirketler')] class extends PanelComponent {
     #[Url(except: '')]
     public string $search = '';
 
-    public function updatedSearch(): void
+    /** '' (all) | 'isyeri-var' | 'isyeri-yok' */
+    #[Url(as: 'durum', except: '')]
+    public string $status = '';
+
+    public function updated(string $property): void
     {
-        $this->resetPage();
+        if (in_array($property, ['search', 'status'], true)) {
+            $this->resetPage();
+        }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function stats(): array
+    {
+        $companies = Company::visibleTo(Auth::user())->where('firm_id', $this->firm->id)->withCount('workplaces')->get(['id']);
+
+        return [
+            'total' => $companies->count(),
+            'withWorkplace' => $companies->where('workplaces_count', '>', 0)->count(),
+            'withoutWorkplace' => $companies->where('workplaces_count', 0)->count(),
+            'workplaces' => (int) $companies->sum('workplaces_count'),
+        ];
     }
 
     /**
@@ -30,6 +52,8 @@ new #[Title('Şirketler')] class extends PanelComponent {
             ->where('firm_id', $this->firm->id)
             ->with('sector')
             ->withCount('workplaces')
+            ->when($this->status === 'isyeri-var', fn ($query) => $query->has('workplaces'))
+            ->when($this->status === 'isyeri-yok', fn ($query) => $query->withoutWorkplaces())
             ->when($this->search !== '', fn ($query) => $query->where(fn ($query) => $query
                 ->where('title', 'like', '%'.$this->search.'%')
                 ->orWhere('short_name', 'like', '%'.$this->search.'%')
@@ -40,14 +64,10 @@ new #[Title('Şirketler')] class extends PanelComponent {
     }
 }; ?>
 
-<div class="flex w-full flex-1 flex-col gap-6">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <flux:heading size="xl">Şirketler</flux:heading>
-            <flux:text class="mt-1">{{ $this->firm->name }} firmasına bağlı şirketler. Her şirketin en az bir işyeri olmalıdır.</flux:text>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
+<div>
+    <x-panel.page-header :crumbs="['Kurulum' => null, 'Şirketler' => null, $this->firm->name => null]" title="Şirketler"
+        subtitle="Firmanıza bağlı şirketler. Her şirketin en az bir işyeri olmalıdır.">
+        <x-slot:actions>
             <flux:button icon="arrow-down-tray" :href="route('exports.download', 'sirketler')">Excel İndir</flux:button>
             @can('import', [\App\Models\Company::class, $this->firm])
                 <flux:button icon="table-cells" :href="route('imports.create', 'sirket')" wire:navigate>Excel ile Aktar</flux:button>
@@ -55,57 +75,71 @@ new #[Title('Şirketler')] class extends PanelComponent {
             @can('create', [\App\Models\Company::class, $this->firm])
                 <flux:button variant="primary" icon="plus" :href="route('companies.create')" wire:navigate>Yeni Şirket</flux:button>
             @endcan
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-panel.page-header>
 
     @unless ($this->firm->isActive())
-        <flux:callout icon="information-circle" color="amber" heading="Firma aktif değil"
-            text="Firma onaylanana (veya yeniden aktifleştirilene) kadar şirket eklenemez ve düzenlenemez." />
+        <x-panel.alert variant="warning" title="Firma aktif değil" class="mb-[18px]">
+            Firma onaylanana (veya yeniden aktifleştirilene) kadar şirket eklenemez ve düzenlenemez.
+        </x-panel.alert>
     @endunless
 
-    <div class="w-full sm:w-80">
-        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Unvan, kısa ad, numara veya VKN..." clearable />
+    <div class="mb-[18px] grid grid-cols-2 gap-3 sm:gap-3.5 xl:grid-cols-4">
+        <x-panel.stat :value="$this->stats['total']" label="Toplam şirket" color="navy" />
+        <x-panel.stat :value="$this->stats['withWorkplace']" label="İşyeri tanımlı" color="mint" />
+        <x-panel.stat :value="$this->stats['withoutWorkplace']" label="İşyeri yok" color="amber" />
+        <x-panel.stat :value="$this->stats['workplaces']" label="Toplam işyeri" color="blue" :href="route('workplaces.index')" />
     </div>
 
-    <flux:table :paginate="$this->companies">
-        <flux:table.columns>
-            <flux:table.column>No</flux:table.column>
-            <flux:table.column>Unvan</flux:table.column>
-            <flux:table.column>Tip</flux:table.column>
-            <flux:table.column>Sektör</flux:table.column>
-            <flux:table.column>Vergi No / Dairesi</flux:table.column>
-            <flux:table.column align="end">İşyeri</flux:table.column>
-            <flux:table.column></flux:table.column>
-        </flux:table.columns>
-        <flux:table.rows>
-            @forelse ($this->companies as $company)
-                <flux:table.row :key="$company->id">
-                    <flux:table.cell>{{ $company->company_no }}</flux:table.cell>
-                    <flux:table.cell variant="strong">
-                        <a href="{{ route('companies.show', $company) }}" wire:navigate class="hover:underline">{{ $company->title }}</a>
-                        <div class="text-xs font-normal text-zinc-500">{{ $company->short_name }}</div>
-                    </flux:table.cell>
-                    <flux:table.cell>{{ $company->company_type->label() }}</flux:table.cell>
-                    <flux:table.cell>{{ $company->sector->name }}</flux:table.cell>
-                    <flux:table.cell>{{ $company->tax_number }} <div class="text-xs text-zinc-500">{{ $company->tax_office }}</div></flux:table.cell>
-                    <flux:table.cell align="end">
-                        @if ($company->workplaces_count === 0)
-                            <flux:badge size="sm" color="amber" inset="top bottom">İşyeri yok</flux:badge>
-                        @else
-                            {{ $company->workplaces_count }}
-                        @endif
-                    </flux:table.cell>
-                    <flux:table.cell align="end">
-                        <flux:button size="sm" variant="ghost" icon="chevron-right" :href="route('companies.show', $company)" wire:navigate />
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <flux:table.row>
-                    <flux:table.cell colspan="7" class="py-10 text-center text-zinc-500">
-                        {{ $search !== '' ? 'Aramaya uyan şirket yok.' : 'Henüz şirket yok. "Yeni Şirket" veya "Excel ile Aktar" ile başlayın.' }}
-                    </flux:table.cell>
-                </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+    <x-panel.table :paginate="$this->companies">
+        <x-slot:toolbar>
+            <x-panel.search wire:model.live.debounce.300ms="search" placeholder="Unvan, kısa ad, numara veya VKN..." />
+            <x-panel.segmented model="status" :current="$status" :options="['' => 'Tümü', 'isyeri-var' => 'İşyeri var', 'isyeri-yok' => 'İşyeri yok']" />
+        </x-slot:toolbar>
+
+        <x-slot:head>
+            <x-panel.th>Şirket</x-panel.th>
+            <x-panel.th>Tip</x-panel.th>
+            <x-panel.th>Sektör</x-panel.th>
+            <x-panel.th>Vergi No</x-panel.th>
+            <x-panel.th>MERSİS</x-panel.th>
+            <x-panel.th align="end">İşyeri</x-panel.th>
+            <x-panel.th class="w-10"></x-panel.th>
+        </x-slot:head>
+
+        @foreach ($this->companies as $company)
+            <x-panel.tr :href="route('companies.show', $company)" wire:key="company-{{ $company->id }}">
+                <td class="py-3.5 ps-[18px] pe-3.5">
+                    <div class="flex items-center gap-[11px]">
+                        <x-panel.avatar :initials="\App\Support\Text::initials($company->short_name)" tone="navy" />
+                        <div class="min-w-0">
+                            <a href="{{ route('companies.show', $company) }}" wire:navigate class="block max-w-[320px] truncate text-[13.5px] font-bold text-ink hover:text-brand">{{ $company->title }}</a>
+                            <div class="text-xs whitespace-nowrap text-muted-2">{{ $company->short_name }} · No {{ $company->company_no }}</div>
+                        </div>
+                    </div>
+                </td>
+                <x-panel.td><x-panel.badge color="navy">{{ $company->company_type->label() }}</x-panel.badge></x-panel.td>
+                <x-panel.td>{{ $company->sector->name }}</x-panel.td>
+                <x-panel.td :sub="$company->tax_office">{{ $company->tax_number }}</x-panel.td>
+                <x-panel.td>{{ $company->mersis_no ?: '—' }}</x-panel.td>
+                <x-panel.td align="end">
+                    @if ($company->workplaces_count === 0)
+                        <x-panel.badge color="amber">İşyeri yok</x-panel.badge>
+                    @else
+                        <span class="tabular-nums">{{ $company->workplaces_count }}</span>
+                    @endif
+                </x-panel.td>
+                <td class="pe-4 text-faint"><flux:icon.chevron-right variant="micro" class="size-4" /></td>
+            </x-panel.tr>
+        @endforeach
+
+        <x-slot:empty>
+            @if ($this->companies->isEmpty())
+                <x-panel.empty :icon="$search !== '' || $status !== '' ? 'magnifying-glass' : 'building-office'"
+                    :title="$search !== '' || $status !== '' ? 'Sonuç bulunamadı' : 'Henüz şirket yok'">
+                    {{ $search !== '' || $status !== '' ? 'Aramaya veya filtreye uyan şirket yok.' : '"Yeni Şirket" veya "Excel ile Aktar" ile başlayın.' }}
+                </x-panel.empty>
+            @endif
+        </x-slot:empty>
+    </x-panel.table>
 </div>

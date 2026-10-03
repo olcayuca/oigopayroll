@@ -51,6 +51,14 @@ class Company extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * @return BelongsTo<Firm, $this>
      */
     public function firm(): BelongsTo

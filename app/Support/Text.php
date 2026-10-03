@@ -16,4 +16,25 @@ final class Text
 
         return (string) preg_replace('/[^a-z0-9]/', '', $value);
     }
+
+    /**
+     * Two-letter avatar initials for an organization name, skipping legal suffixes.
+     *
+     * "Oigo Yazılım A.Ş." → "OY", "Oigo Gıda San. ve Tic. A.Ş." → "OG", "Beta" → "BE".
+     */
+    public static function initials(?string $name): string
+    {
+        $words = array_values(array_filter(
+            preg_split('/\s+/u', trim((string) $name)) ?: [],
+            fn (string $word) => ! preg_match('/^(a\.?ş\.?|ltd\.?|şti\.?|san\.?|tic\.?|ve|ltd\.?şti\.?|inc\.?|co\.?)$/iu', $word),
+        ));
+
+        $initials = match (count($words)) {
+            0 => '',
+            1 => mb_substr($words[0], 0, 2),
+            default => mb_substr($words[0], 0, 1).mb_substr($words[1], 0, 1),
+        };
+
+        return mb_strtoupper(strtr($initials, ['i' => 'İ', 'ı' => 'I']));
+    }
 }

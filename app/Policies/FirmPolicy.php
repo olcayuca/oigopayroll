@@ -64,6 +64,19 @@ class FirmPolicy
         return $firm->status !== FirmStatus::Passive && $user->hasPermissionOn(Permission::FirmUpdate, $firm);
     }
 
+    /**
+     * Tanımlar (birim, unvan, pozisyon…): everyone who sees the firm reads them; firm editors maintain them.
+     */
+    public function viewDefinitions(User $user, Firm $firm): bool
+    {
+        return $user->canSee($firm);
+    }
+
+    public function manageDefinitions(User $user, Firm $firm): bool
+    {
+        return $firm->isActive() && $user->hasPermissionOn(Permission::FirmUpdate, $firm);
+    }
+
     public function delete(User $user, Firm $firm): bool
     {
         return false;

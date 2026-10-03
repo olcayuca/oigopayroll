@@ -72,6 +72,26 @@ class WorkplacesPageTest extends TestCase
             'sgk_declaration_username' => '10000000146',
             'sgk_workplace_password' => 'isyeri-sifre',
             'sgk_system_password' => 'sistem-sifre',
+            // remaining columns of the customer setup file
+            'nace_code' => '62.01.01',
+            'labor_sector_id' => '20',
+            'sgk_registry_no' => str_repeat('3', 26),
+            'sgk_directorate' => 'Kadıköy SGM',
+            'sgk_username' => '10000000146',
+            'iskur_user_name' => 'Ayşe Yılmaz',
+            'iskur_user_code' => '10000000146',
+            'iskur_password' => 'iskur-sifre',
+            'iskur_registry_no' => '34-1029384',
+            'tax_office_user_code' => '1234567890',
+            'dvd_username' => 'ornekas',
+            'dvd_password' => 'dvd-sifre',
+            'dvd_passphrase' => 'dvd-parola',
+            'ebeyanname_password' => 'ebeyan-sifre',
+            'police_email' => 'bildirim@ornek.com.tr',
+            'police_password' => 'emniyet-sifre',
+            'bes_company_name' => 'Anadolu Hayat Emeklilik',
+            'bes_username' => 'ornek.bes',
+            'bes_password' => 'bes-sifre',
             'has_union' => false,
         ], $overrides);
     }
@@ -82,8 +102,8 @@ class WorkplacesPageTest extends TestCase
 
         $this->get(route('workplaces.index'))->assertOk()->assertSee('Kadıköy Şube');
         $this->get(route('workplaces.create', ['sirket' => $this->company->id]))->assertOk();
-        $this->get(route('workplaces.show', $workplace))->assertOk()->assertSee('Temel Bilgiler');
-        $this->get(route('workplaces.show', [$workplace, 'sekme' => 'sifreler']))->assertOk()->assertSee('••••••••');
+        $this->get(route('workplaces.show', $workplace))->assertOk()->assertSee('Genel Bilgiler')->assertSee('Emniyet &amp; BES', false);
+        $this->get(route('workplaces.show', [$workplace, 'sekme' => 'sgk']))->assertOk()->assertSee('••••••••');
         $this->get(route('workplaces.edit', $workplace))->assertOk()->assertDontSee($workplace->sgk_system_password);
         $this->get(route('imports.create', 'isyeri'))->assertOk();
     }
@@ -151,7 +171,7 @@ class WorkplacesPageTest extends TestCase
         $workplace = Workplace::factory()->for($this->company)->create(['sgk_system_password' => 'gizli']);
 
         Livewire::test('pages::panel.workplaces.show', ['workplace' => $workplace])
-            ->set('tab', 'sifreler')
+            ->set('tab', 'sgk')
             ->call('reveal', 'sgk_system_password')
             ->assertSee('gizli');
 
@@ -162,7 +182,7 @@ class WorkplacesPageTest extends TestCase
         $this->actingAs($viewer);
 
         Livewire::test('pages::panel.workplaces.show', ['workplace' => $workplace])
-            ->set('tab', 'sifreler')
+            ->set('tab', 'sgk')
             ->assertDontSee('Göster')
             ->call('reveal', 'sgk_system_password')
             ->assertForbidden();
@@ -173,12 +193,19 @@ class WorkplacesPageTest extends TestCase
     public function test_workplace_excel_import(): void
     {
         $file = $this->workplaceSheet([
-            ['Şirket Numarası *' => '1001', 'İşyeri Numarası *' => '1', 'İşyeri Şube Adı *' => 'Merkez', 'İşyeri Tipi *' => 'Merkez İşyeri',
-                'İşyeri Türü *' => 'Normal', 'Ünvan *' => 'Örnek A.Ş.', 'Vergi Numarası *' => TurkishIdentifiers::makeVkn('012345678'),
+            ['Şirket Numarası' => '1001', 'İşyeri Numarası *' => '1', 'İşyeri Şube Adı *' => 'Merkez', 'İşyeri Tipi *' => 'Merkez İşyeri',
+                'İşyeri Türü *' => 'Normal', 'Ünvan' => 'Örnek A.Ş.', 'Vergi Numarası *' => TurkishIdentifiers::makeVkn('012345678'),
                 'Vergi Dairesi *' => 'Kadıköy', 'Tehlike Sınıfı *' => 'Tehlikeli', 'İl *' => 'İstanbul', 'İlçe *' => 'Kadıköy',
                 'İşyeri Açık Adresi *' => 'Moda Cad. 1', 'SGK İşyeri Yetkilisi Adı Soyadı *' => 'Ayşe', 'SGK İşyeri Kodu *' => '1',
-                'e-Bildirge Yetkilisi Adı Soyadı *' => 'Ayşe', 'İşyeri Açılış Tarihi *' => '01.03.2021',
-                'SGK Bildirge Kullanıcı Adı (TCKN) *' => '10000000146', 'SGK İşyeri Şifresi *' => 'a', 'SGK Sistem Şifresi *' => 'b'],
+                'e-Bildirge Yetkilisi Adı Soyadı *' => 'Ayşe', 'İşyeri Açılış Tarihi' => '01.03.2021',
+                'SGK Bildirge Kullanıcı Adı (TCKN) *' => '10000000146', 'SGK İşyeri Şifresi *' => 'a', 'SGK Sistem Şifresi *' => 'b',
+                'ÇSGB İşkolu *' => '20', 'NACE Kodu *' => '62.01.01', 'İşyeri SGK Sicil Numarası *' => str_repeat('4', 26),
+                'Bağlı Bulunulan SGK Müdürlüğü *' => 'Kadıköy SGM', 'SGK Kullanıcı Adı (TCKN) *' => '10000000146',
+                'İŞKUR Kullanıcı Adı Soyadı *' => 'Ayşe', 'İŞKUR Kullanıcı Kodu (TCKN) *' => '10000000146', 'İŞKUR Şifresi *' => 'c',
+                'İŞKUR Sicil Numarası *' => '34-1', 'Vergi Dairesi Kullanıcı Kodu *' => '1', 'Dijital Vergi Dairesi Kullanıcı Adı *' => 'd',
+                'Dijital Vergi Dairesi Şifre *' => 'e', 'Dijital Vergi Dairesi Parola *' => 'f', 'e-Beyanname Şifresi *' => 'g',
+                'Emniyet (Karakol) Bildirimi E-posta *' => 'b@ornek.com', 'Emniyet (Karakol) Bildirimi Şifre *' => 'h',
+                'BES Firma Adı *' => 'BES A.Ş.', 'BES Firma Kullanıcı Adı *' => 'i', 'BES Firma Şifre *' => 'j'],
         ]);
 
         Livewire::test('pages::panel.imports.upload', ['type' => 'isyeri'])

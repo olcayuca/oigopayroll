@@ -30,6 +30,12 @@ enum Permission: string
     case WorkplaceImport = 'workplace.import';
     case WorkplaceViewCredentials = 'workplace.view_credentials';
 
+    case EmployeeView = 'employee.view';
+    case EmployeeCreate = 'employee.create';
+    case EmployeeUpdate = 'employee.update';
+    case EmployeeDelete = 'employee.delete';
+    case EmployeeImport = 'employee.import';
+
     // Payroll operations; enforced once the payroll module is built.
     case PayrollView = 'payroll.view';
     case PayrollDownload = 'payroll.download';
@@ -58,6 +64,11 @@ enum Permission: string
             self::WorkplaceDelete => 'İşyeri silme',
             self::WorkplaceImport => 'Excel ile işyeri aktarma',
             self::WorkplaceViewCredentials => 'İşyeri şifrelerini görüntüleme',
+            self::EmployeeView => 'Personel görüntüleme',
+            self::EmployeeCreate => 'Personel oluşturma',
+            self::EmployeeUpdate => 'Personel düzenleme',
+            self::EmployeeDelete => 'Personel silme',
+            self::EmployeeImport => 'Excel ile personel aktarma',
             self::PayrollView => 'Bordro görüntüleme',
             self::PayrollDownload => 'Bordro indirme',
             self::PayrollEnter => 'Bordro veri girişi',
@@ -73,7 +84,7 @@ enum Permission: string
      */
     public static function groups(): array
     {
-        $groups = ['firm' => 'Firma', 'company' => 'Şirket', 'workplace' => 'İşyeri', 'payroll' => 'Bordro'];
+        $groups = ['firm' => 'Firma', 'company' => 'Şirket', 'workplace' => 'İşyeri', 'employee' => 'Personel', 'payroll' => 'Bordro'];
         $grouped = [];
 
         foreach (self::cases() as $case) {

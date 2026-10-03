@@ -79,6 +79,12 @@ class TabsRuleTest extends TestCase
             ->set('form.sgk_officer_name', 'A')->set('form.sgk_workplace_code', '1')->set('form.ebildirge_officer_name', 'A')
             ->set('form.opening_date', '2021-01-01')->set('form.sgk_declaration_username', '10000000146')
             ->set('form.sgk_workplace_password', 'a')->set('form.sgk_system_password', 'b')
+            ->set('form.nace_code', '62.01.01')->set('form.labor_sector_id', '20')
+            ->set('form.sgk_registry_no', str_repeat('5', 26))->set('form.sgk_directorate', 'Kadıköy SGM')->set('form.sgk_username', '10000000146')
+            ->set('form.iskur_user_name', 'A')->set('form.iskur_user_code', '10000000146')->set('form.iskur_password', 'c')->set('form.iskur_registry_no', '1')
+            ->set('form.tax_office_user_code', '1')->set('form.dvd_username', 'd')->set('form.dvd_password', 'e')->set('form.dvd_passphrase', 'f')
+            ->set('form.ebeyanname_password', 'g')->set('form.police_email', 'a@b.com')->set('form.police_password', 'h')
+            ->set('form.bes_company_name', 'BES')->set('form.bes_username', 'i')->set('form.bes_password', 'j')
             ->call('save')
             ->assertSet('tab', 'adres');
 

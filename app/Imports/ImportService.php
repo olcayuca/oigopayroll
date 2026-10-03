@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Actions\Companies\SaveCompany;
+use App\Actions\Employees\SaveEmployee;
 use App\Actions\Firms\CreateFirm;
 use App\Actions\Workplaces\SaveWorkplace;
 use App\Enums\AuditEvent;
@@ -11,11 +12,15 @@ use App\Enums\ImportType;
 use App\Models\Company;
 use App\Models\DataImport;
 use App\Models\DataImportRow;
+use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
 use App\Models\Workplace;
 use App\Support\Audit;
+use App\Support\Text;
 use App\Validation\CompanyRules;
+use App\Validation\EmployeeInput;
+use App\Validation\EmployeeRules;
 use App\Validation\FirmRules;
 use App\Validation\WorkplaceInput;
 use App\Validation\WorkplaceRules;
@@ -46,6 +51,7 @@ class ImportService
         private CreateFirm $createFirm,
         private SaveCompany $saveCompany,
         private SaveWorkplace $saveWorkplace,
+        private SaveEmployee $saveEmployee,
     ) {
         //
     }
@@ -182,7 +188,7 @@ class ImportService
     /**
      * Write one row: create, update, or nothing when the record is unchanged.
      */
-    private function apply(DataImport $import, ?Firm $firm, DataImportRow $row, ?User $user): Firm|Company|Workplace|null
+    private function apply(DataImport $import, ?Firm $firm, DataImportRow $row, ?User $user): Firm|Company|Workplace|Employee|null
     {
         if ($import->type === ImportType::Firm) {
             if ($user === null) {
@@ -210,6 +216,8 @@ class ImportService
             $plan['action'] === DataImportRow::UNCHANGED => null,
             $target instanceof Company => $this->saveCompany->update($target, $plan['input']),
             $target instanceof Workplace => $this->saveWorkplace->update($target, $plan['input']),
+            $target instanceof Employee => $this->saveEmployee->update($target, $plan['input']),
+            $import->type === ImportType::Employee => $this->saveEmployee->create($firm, $plan['input'], $user),
             $import->type === ImportType::Company => $this->saveCompany->create($firm, $plan['input'], $user),
             $plan['company'] !== null => $this->saveWorkplace->create($plan['company'], $plan['input'], $user),
             default => throw ValidationException::withMessages(['company_no' => 'Şirket numarası bu firmada bulunamadı.']),
@@ -221,7 +229,7 @@ class ImportService
      *
      * @param  array<string, mixed>  $data  mapped row
      * @param  list<string>  $columns  field keys present in the file
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|null, company: Company|null}
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
      */
     private function plan(ImportType $type, ?Firm $firm, array $data, array $columns, ?User $user): array
     {
@@ -235,16 +243,18 @@ class ImportService
             return [...$result, 'errors' => ['firm' => ['Firma bulunamadı.']]];
         }
 
-        return $type === ImportType::Company
-            ? $this->planCompany($firm, self::clean($data), $columns, $user, $result)
-            : $this->planWorkplace($firm, $data, $columns, $user, $result);
+        return match ($type) {
+            ImportType::Company => $this->planCompany($firm, self::clean($data), $columns, $user, $result),
+            ImportType::Employee => $this->planEmployee($firm, self::clean($data), $columns, $user, $result),
+            default => $this->planWorkplace($firm, $data, $columns, $user, $result),
+        };
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $columns
-     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|null, company: Company|null}  $result
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|null, company: Company|null}
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
      */
     private function planCompany(Firm $firm, array $data, array $columns, ?User $user, array $result): array
     {
@@ -270,18 +280,18 @@ class ImportService
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $columns
-     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|null, company: Company|null}  $result
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|null, company: Company|null}
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
      */
     private function planWorkplace(Firm $firm, array $data, array $columns, ?User $user, array $result): array
     {
-        $company = $this->findCompany($firm, $data['company_no'] ?? null);
+        $company = $this->findCompany($firm, $data['company_no'] ?? null, $data['company_name'] ?? null);
 
         if ($company === null) {
-            return [...$result, 'errors' => ['company_no' => ['Şirket Numarası bu firmada bulunamadı; önce şirketi oluşturun.']]];
+            return [...$result, 'errors' => ['company_no' => ['Şirket (numara veya ad) bu firmada bulunamadı; önce şirketi oluşturun.']]];
         }
 
-        unset($data['company_no']);
+        unset($data['company_no'], $data['company_name']);
         $result['company'] = $company;
         $workplaceNo = $data['workplace_no'] ?? null;
         $existing = is_string($workplaceNo) && $workplaceNo !== ''
@@ -289,7 +299,7 @@ class ImportService
             : null;
 
         if ($existing === null) {
-            $input = WorkplaceInput::normalize($data);
+            $input = WorkplaceInput::normalize($data, $company);
 
             return [...$result, 'input' => $data, 'errors' => $this->errors($input, WorkplaceRules::rules($input, $company), WorkplaceRules::attributes())];
         }
@@ -303,21 +313,133 @@ class ImportService
         $keys = array_values(array_diff(array_keys(WorkplaceRules::rules([], $company)), Workplace::SECRET_FIELDS));
         $input = $this->merge($this->current($existing, $keys), $data, $columns, [
             'company_no' => [],
+            'company_name' => [],
             'risk_class' => ['risk_class_id'],
             'labor_sector' => ['labor_sector_id'],
             'province_name' => ['province_id', 'province_name'],
             'district_name' => ['district_id', 'district_name'],
         ]);
-        $normalized = WorkplaceInput::normalize($input);
+        $normalized = WorkplaceInput::normalize($input, $company);
         $errors = $this->errors($normalized, WorkplaceRules::rules($normalized, $company, $existing, updating: true), WorkplaceRules::attributes());
 
         return [...$result, 'errors' => $errors, 'input' => $input, 'target' => $existing, 'action' => $this->updateAction($existing, $normalized)];
     }
 
     /**
+     * Personnel rows: matched to existing records by sicil no; Firma / SGK Firma / şube given by name.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $columns
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
+     */
+    private function planEmployee(Firm $firm, array $data, array $columns, ?User $user, array $result): array
+    {
+        $registryNo = $data['registry_no'] ?? null;
+        $existing = is_scalar($registryNo) && $registryNo !== ''
+            ? Employee::withTrashed()->where('firm_id', $firm->id)->where('registry_no', (string) $registryNo)->first()
+            : null;
+
+        // Firma / SGK Firma / şube: resolved from the names in the file, or kept from the record.
+        $placement = [];
+        $errors = [];
+        $workplace = null;
+
+        if ($existing === null || array_intersect(['company_name', 'sgk_company_name', 'workplace_name'], $columns) !== []) {
+            $company = $this->resolveCompany($firm, $data['company_name'] ?? null);
+            $sgkCompany = $this->resolveCompany($firm, $data['sgk_company_name'] ?? null) ?? $company;
+            $workplace = $sgkCompany ? $this->resolveWorkplace($sgkCompany, $data['workplace_name'] ?? null) : null;
+
+            if ($company === null) {
+                $errors['company_id'][] = 'Firma bu firmanın şirketleri arasında bulunamadı.';
+            }
+            if ($workplace === null) {
+                $errors['workplace_id'][] = 'İş yeri şube adı SGK firmasının işyerleri arasında bulunamadı.';
+            }
+
+            $placement = ['company_id' => $company?->id, 'workplace_id' => $workplace?->id];
+        }
+
+        unset($data['company_name'], $data['sgk_company_name'], $data['workplace_name']);
+
+        if ($existing === null) {
+            $input = [...$data, ...$placement];
+
+            if ($user !== null && $workplace !== null && ! $user->can('createIn', [Employee::class, $workplace])) {
+                $errors['workplace_id'][] = 'Bu işyerine personel ekleme yetkiniz yok.';
+            }
+
+            $normalized = EmployeeInput::normalize($input, $firm);
+            $errors = $this->mergeErrors($this->employeeErrors($normalized, $firm), $errors);
+
+            return [...$result, 'input' => $input, 'errors' => $errors];
+        }
+
+        $error = $this->cannotUpdate($existing, false, $user, 'personel');
+
+        if ($error !== null) {
+            return [...$result, 'errors' => ['registry_no' => [$error]]];
+        }
+
+        $keys = array_values(array_diff((new Employee)->getFillable(), [...Employee::SECRET_FIELDS, 'firm_id', 'created_by', 'tckn_hash']));
+        $input = [...$this->merge($this->current($existing, $keys), $data, $columns, [
+            'company_name' => [], 'sgk_company_name' => [], 'workplace_name' => [],
+        ]), ...$placement];
+        $normalized = EmployeeInput::normalize($input, $firm);
+        $errors = $this->mergeErrors($this->employeeErrors($normalized, $firm, $existing), $errors);
+
+        return [...$result, 'errors' => $errors, 'input' => $input, 'target' => $existing, 'action' => $this->updateAction($existing, $normalized)];
+    }
+
+    /**
+     * @param  array<string, mixed>  $normalized
+     * @return array<string, list<string>>
+     */
+    private function employeeErrors(array $normalized, Firm $firm, ?Employee $existing = null): array
+    {
+        $errors = $this->errors($normalized, EmployeeRules::rules($normalized, $firm, $existing), EmployeeRules::attributes());
+
+        if (isset($errors['tckn_hash'])) {
+            $errors['tckn'] = ['Bu TC Kimlik No ile kayıtlı bir personel zaten var.'];
+            unset($errors['tckn_hash']);
+        }
+
+        return $errors;
+    }
+
+    /**
+     * A company of the firm by number, unvan or short name.
+     */
+    private function resolveCompany(Firm $firm, mixed $value): ?Company
+    {
+        if (! is_scalar($value) || trim((string) $value) === '') {
+            return null;
+        }
+
+        return $firm->companies()->where('company_no', trim((string) $value))->first() ?? $this->findCompany($firm, null, (string) $value);
+    }
+
+    /**
+     * A workplace of the company by şube adı or işyeri numarası (the only one when left blank).
+     */
+    private function resolveWorkplace(Company $company, mixed $value): ?Workplace
+    {
+        $workplaces = $company->workplaces()->get();
+
+        if (! is_scalar($value) || trim((string) $value) === '') {
+            return $workplaces->count() === 1 ? $workplaces->first() : null;
+        }
+
+        $key = Text::key((string) $value);
+        $matches = $workplaces->filter(fn (Workplace $workplace) => Text::key($workplace->branch_name) === $key || Text::key($workplace->workplace_no) === $key);
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
+    /**
      * Why an existing record cannot be updated from this import, if it cannot.
      */
-    private function cannotUpdate(Company|Workplace $record, bool $otherFirm, ?User $user, string $label): ?string
+    private function cannotUpdate(Company|Workplace|Employee $record, bool $otherFirm, ?User $user, string $label): ?string
     {
         return match (true) {
             $otherFirm => "Bu {$label} numarası başka bir firmada kayıtlı.",
@@ -333,7 +455,7 @@ class ImportService
      * @param  list<string>  $keys
      * @return array<string, mixed>
      */
-    private function current(Company|Workplace $record, array $keys): array
+    private function current(Company|Workplace|Employee $record, array $keys): array
     {
         $values = [];
 
@@ -365,7 +487,7 @@ class ImportService
             foreach ($dataKeys[$column] ?? [$column] as $key) {
                 $value = $data[$key] ?? null;
 
-                if (in_array($key, Workplace::SECRET_FIELDS, true) && ($value === null || $value === '')) {
+                if (in_array($key, [...Workplace::SECRET_FIELDS, ...Employee::SECRET_FIELDS], true) && ($value === null || $value === '')) {
                     continue;
                 }
 
@@ -381,7 +503,7 @@ class ImportService
      *
      * @param  array<string, mixed>  $input
      */
-    private function updateAction(Company|Workplace $record, array $input): string
+    private function updateAction(Company|Workplace|Employee $record, array $input): string
     {
         $copy = clone $record;
         $copy->fill(array_intersect_key($input, array_flip($record->getFillable())));
@@ -422,8 +544,12 @@ class ImportService
         $keys = match ($type) {
             ImportType::Firm => ['tax_number' => $data['tax_number'] ?? null],
             ImportType::Company => ['company_no' => $data['company_no'] ?? null],
+            ImportType::Employee => [
+                'registry_no' => $data['registry_no'] ?? null,
+                'tckn' => isset($data['tckn']) && is_scalar($data['tckn']) ? preg_replace('/\D/', '', (string) $data['tckn']) : null,
+            ],
             ImportType::Workplace => [
-                'workplace_no' => isset($data['workplace_no']) ? ($data['company_no'] ?? '').'|'.$data['workplace_no'] : null,
+                'workplace_no' => isset($data['workplace_no']) ? ($data['company_no'] ?? Text::key($data['company_name'] ?? '')).'|'.$data['workplace_no'] : null,
                 'sgk_registry_no' => $data['sgk_registry_no'] ?? null,
             ],
         };
@@ -463,12 +589,23 @@ class ImportService
         return $base;
     }
 
-    private function findCompany(Firm $firm, mixed $companyNo): ?Company
+    /**
+     * Find the row's company by number, or — as in the customer's setup file — by name (unvan or short name).
+     */
+    private function findCompany(Firm $firm, mixed $companyNo, mixed $companyName = null): ?Company
     {
-        if (! is_string($companyNo) || $companyNo === '') {
+        if (is_string($companyNo) && $companyNo !== '') {
+            return $firm->companies()->where('company_no', $companyNo)->first();
+        }
+
+        if (! is_string($companyName) || Text::key($companyName) === '') {
             return null;
         }
 
-        return $firm->companies()->where('company_no', $companyNo)->first();
+        $key = Text::key($companyName);
+        $matches = $firm->companies()->get()
+            ->filter(fn (Company $company) => in_array($key, [Text::key($company->title), Text::key($company->short_name)], true));
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 }
