@@ -8,6 +8,7 @@ use App\Enums\Portal;
 use App\Models\Announcement;
 use App\Models\Firm;
 use App\Models\User;
+use App\Notifications\DeliverAnnouncements;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -59,12 +60,75 @@ class AnnouncementsTest extends TestCase
         $this->actingAs($client);
         $this->get(route('dashboard'))->assertOk()->assertSee('Bu firmaya')->assertDontSee('Başka firmaya');
 
+        // "Üst şeritte gösterme" on the Duyurular page: gone from the strip, still listed; critical ones stay.
         $herkese = Announcement::where('title', 'Herkese')->sole();
-        Livewire::test('announcements')
+        Livewire::test('pages::panel.announcements.index')
             ->call('dismiss', $herkese->id)
             ->call('dismiss', $critical->id)
-            ->assertDontSee('Herkese')
-            ->assertSee('Kritik');
+            ->assertSee('Herkese');
+        Livewire::test('announcements')->assertDontSee('Herkese')->assertSee('Kritik');
+    }
+
+    public function test_duyurular_page_categories_reading_and_links(): void
+    {
+        $firm = Firm::factory()->create();
+        $client = $this->client($firm);
+        $this->announce(['title' => 'Planlı bakım', 'category' => 'Bakım', 'pinned' => true, 'starts_at' => now()->subDays(3)]);
+        $mevzuat = $this->announce(['title' => 'Muhtasar son günü', 'category' => 'Mevzuat', 'link_label' => 'Personele git', 'link_url' => '/personel']);
+        $this->announce(['title' => 'Eski duyuru', 'category' => 'Sistem', 'ends_at' => now()->subDay(), 'starts_at' => now()->subWeek()]);
+        $this->announce(['title' => 'Başka firmaya', 'audience' => 'firms'], [Firm::factory()->create()->id]);
+        $this->actingAs($client);
+
+        $this->get(route('dashboard'))->assertSee('duyurular?duyuru='.$mevzuat->id, false);
+
+        Livewire::test('pages::panel.announcements.index')
+            ->assertSeeInOrder(['Planlı bakım', 'Muhtasar son günü'])
+            ->assertDontSee('Eski duyuru')->assertDontSee('Başka firmaya')
+            ->assertSee('Tümünü okundu say (2)')
+            ->assertSee('Personele git')
+            ->set('category', 'Mevzuat')->assertDontSee('Planlı bakım')
+            ->set('view', 'arsiv')->set('category', '')->assertSee('Eski duyuru');
+
+        // Opened from the strip or a notification: that one is read.
+        Livewire::withQueryParams(['duyuru' => $mevzuat->id])->test('pages::panel.announcements.index')->assertSee('Tümünü okundu say (1)');
+        $this->assertSame(1, Announcement::query()->live()->forAudience($client)->unreadBy($client)->count());
+
+        Livewire::test('pages::panel.announcements.index')->call('readAll')->assertDontSee('Tümünü okundu say');
+        $this->assertSame(0, Announcement::query()->live()->forAudience($client)->unreadBy($client)->count());
+    }
+
+    public function test_notification_on_publish_reaches_the_audience_once(): void
+    {
+        $firm = Firm::factory()->create();
+        $client = $this->client($firm);
+        $outsider = $this->client(Firm::factory()->create());
+        $this->onPortal(Portal::Admin);
+        $this->actingAs(User::factory()->superAdmin()->create());
+
+        Livewire::test('pages::admin.announcements.index')
+            ->call('create')
+            ->set('title', 'Yeni Excel şablonu')->set('body', 'Personel şablonu güncellendi.')
+            ->set('category', 'Yeni Özellik')
+            ->set('audience', 'firms')->set('firmIds', [(string) $firm->id])
+            ->set('linkLabel', 'Kötü')->set('linkUrl', 'javascript:alert(1)')
+            ->call('save')->assertHasErrors('linkUrl')
+            ->set('linkUrl', '/aktarim/personel')
+            ->call('save')->assertHasNoErrors();
+
+        $announcement = Announcement::sole();
+        $this->assertNotNull($announcement->notified_at);
+        $this->assertSame(1, $client->notifications()->where('data->title', 'like', '%Yeni Excel şablonu')->count());
+        $this->assertSame(0, $outsider->notifications()->count());
+
+        app(DeliverAnnouncements::class)->run();
+        $this->assertSame(1, $client->notifications()->count(), 'Announced once.');
+
+        // Planned: announced when it starts.
+        $planned = $this->announce(['title' => 'Planlı', 'notify' => true, 'starts_at' => now()->addHour()]);
+        $this->assertSame(0, app(DeliverAnnouncements::class)->run());
+        $this->travel(2)->hours();
+        $this->assertSame(1, app(DeliverAnnouncements::class)->run());
+        $this->assertNotNull($planned->fresh()?->notified_at);
     }
 
     public function test_announcements_are_panel_only(): void

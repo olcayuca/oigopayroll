@@ -7,10 +7,10 @@ use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
 use App\Http\Controllers\DownloadReport;
 use App\Http\Controllers\DownloadSupportAttachment;
-use App\Http\Controllers\ShowFirmLogo;
 use App\Http\Controllers\ExportAuditLog;
 use App\Http\Controllers\ExportFirmRecords;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\ShowFirmLogo;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -100,6 +100,7 @@ Route::domain(config('portals.panel'))
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
 
         Route::livewire('ayarlar', 'pages::panel.settings.index')->name('settings.index');
+        Route::livewire('duyurular', 'pages::panel.announcements.index')->name('announcements.index');
         Route::get('firma-logo/{firm}', ShowFirmLogo::class)->name('firms.logo');
 
         Route::livewire('destek-talepleri', 'pages::panel.support.index')->name('support.index');

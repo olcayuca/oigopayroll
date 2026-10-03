@@ -1,5 +1,6 @@
 <?php
 
+use App\Notifications\DeliverAnnouncements;
 use App\Notifications\DeliverDueReminders;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -20,6 +21,7 @@ new class extends Component {
         // Personal reminders arrive with the bell poll as well (no scheduler needed).
         if ($user = Auth::user()) {
             app(DeliverDueReminders::class)->run($user);
+            app(DeliverAnnouncements::class)->run();
         }
 
         return Auth::user()?->unreadNotifications()->count() ?? 0;

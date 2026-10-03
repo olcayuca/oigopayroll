@@ -16,6 +16,7 @@ enum NotificationCategory: string
     case Documents = 'documents';
     case Support = 'support';
     case Reminders = 'reminders';
+    case Announcements = 'announcements';
     case System = 'system';
 
     public function label(): string
@@ -25,6 +26,7 @@ enum NotificationCategory: string
             self::Documents => 'Belge süreleri',
             self::Support => 'Destek talepleri',
             self::Reminders => 'Hatırlatıcılarım',
+            self::Announcements => 'Duyurular',
             self::System => 'Sistem bildirimleri',
         };
     }
@@ -36,6 +38,7 @@ enum NotificationCategory: string
             self::Documents => 'Firma belgelerinin süresi dolarken ve dolduğunda',
             self::Support => 'Talep alındı, yanıtlandı ve durum değişiklikleri',
             self::Reminders => 'Asistandan eklediğiniz hatırlatıcıların zamanı geldiğinde',
+            self::Announcements => 'Mevzuat, sistem ve yeni özellik duyuruları (kritik duyurular her zaman gelir)',
             self::System => 'KVKK başvuruları ve zorunlu bilgilendirmeler',
         };
     }
@@ -45,6 +48,6 @@ enum NotificationCategory: string
      */
     public static function configurable(): array
     {
-        return [self::Setup, self::Documents, self::Support, self::Reminders];
+        return [self::Setup, self::Documents, self::Support, self::Reminders, self::Announcements];
     }
 }

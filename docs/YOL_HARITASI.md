@@ -88,6 +88,12 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 ### 2.3.1 Duyurular
 - ✅ Admin → Duyurular: bilgi / uyarı / kritik; hedef herkes, müşteriler, HRD personeli veya seçili firmalar; başlangıç/bitiş;
   panelde sayfa üstünde gösterilir, kullanıcı kapatabilir (kritik kapatılamaz), kaç kişinin kapattığı görünür
+- ✅ Duyurular sayfası (panel → Yönetim → Duyurular, prototip 34-duyurular): kategori filtresi (Mevzuat, Sistem, Bakım, Yeni Özellik),
+  sabitlenenler üstte, okunmamışlar işaretli, "Tümünü okundu say", bağlantı düğmesi (panel yolu veya https), Güncel / Arşiv (son 1 yıl)
+- ✅ Üst şerit tıklanınca sayfada o duyuruyu açar ve okundu sayar; menüde okunmamış sayısı; "Üst şeritte gösterme" sayfadan
+- ✅ Admin: kategori, sabitleme, bağlantı, "Bildirim gönder" (yayına girince hedef kullanıcılara zil + e-posta, planlı olanlar
+  başlangıçta; her duyuru bir kez); listede okuyan / şeritten kaldıran sayısı ve bildirim durumu
+- ✅ Bildirim tercihlerinde "Duyurular" kategorisi; kritik duyurular kapatılamaz
 
 ### 2.3.2 Bildirimler
 - ✅ Sistem içi bildirimler: kenar çubuğunda zil + Bildirimler sayfası (okunmamış/tümü, tümünü okundu say)

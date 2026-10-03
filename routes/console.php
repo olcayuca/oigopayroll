@@ -2,6 +2,7 @@
 
 use App\Actions\Firms\ManageContracts;
 use App\Models\AuditLog;
+use App\Notifications\DeliverAnnouncements;
 use App\Notifications\DeliverDueReminders;
 use App\Notifications\SendReminders;
 use App\Support\SecuritySettings;
@@ -21,6 +22,9 @@ Schedule::call(fn () => app(SendReminders::class)->run())
 
 Schedule::call(fn () => app(DeliverDueReminders::class)->run())
     ->everyMinute()->description('Kişisel hatırlatıcılar');
+
+Schedule::call(fn () => app(DeliverAnnouncements::class)->run())
+    ->everyMinute()->description('Yayına giren duyuruların bildirimi');
 
 Schedule::command('hrd:yedek')->dailyAt('02:30')->withoutOverlapping()->description('Günlük veritabanı yedeği');
 
