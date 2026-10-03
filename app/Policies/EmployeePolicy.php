@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Models\Company;
 use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
@@ -56,6 +57,18 @@ class EmployeePolicy
     public function delete(User $user, Employee $employee): bool
     {
         return $employee->firm->isActive() && $user->hasPermissionOn(Permission::EmployeeDelete, $employee->workplace);
+    }
+
+    /**
+     * Restore from the trash: the workplace and company must not be deleted themselves.
+     */
+    public function restore(User $user, Employee $employee): bool
+    {
+        $workplace = Workplace::withTrashed()->find($employee->workplace_id);
+
+        return $workplace !== null && ! $workplace->trashed()
+            && ! Company::onlyTrashed()->whereKey([$employee->company_id, $workplace->company_id])->exists()
+            && $employee->firm->isActive() && $user->hasPermissionOn(Permission::EmployeeDelete, $workplace);
     }
 
     /**

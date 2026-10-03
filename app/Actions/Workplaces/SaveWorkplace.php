@@ -4,6 +4,7 @@ namespace App\Actions\Workplaces;
 
 use App\Enums\AuditEvent;
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\User;
 use App\Models\Workplace;
 use App\Support\Audit;
@@ -71,6 +72,10 @@ class SaveWorkplace
      */
     public function delete(Workplace $workplace): void
     {
+        if (Employee::query()->where('workplace_id', $workplace->id)->exists()) {
+            throw ValidationException::withMessages(['workplace' => 'Personeli bulunan işyeri silinemez; önce personeli taşıyın veya silin.']);
+        }
+
         $workplace->delete();
         Audit::log(AuditEvent::WorkplaceDeleted, "İşyeri silindi: {$workplace->branch_name}", $workplace);
     }

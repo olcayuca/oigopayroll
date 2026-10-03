@@ -4,6 +4,7 @@ namespace Tests\Feature\Panel;
 
 use App\Actions\Access\GrantAccess;
 use App\Actions\Employees\SaveEmployee;
+use App\Enums\CodeList;
 use App\Enums\DefinitionType;
 use App\Enums\ImportType;
 use App\Enums\Permission;
@@ -13,6 +14,7 @@ use App\Models\Company;
 use App\Models\Definition;
 use App\Models\Employee;
 use App\Models\Firm;
+use App\Models\PayrollCode;
 use App\Models\User;
 use App\Models\Workplace;
 use App\Rules\Iban;
@@ -153,6 +155,20 @@ class EmployeesTest extends TestCase
         }
 
         $this->assertSame(0, Definition::count(), 'Nothing is created when the record is invalid.');
+    }
+
+    public function test_occupation_code_is_checked_against_the_list_once_it_is_loaded(): void
+    {
+        PayrollCode::create(['list' => CodeList::Occupations, 'code' => '2411.01', 'name' => 'Muhasebeci']);
+
+        try {
+            app(SaveEmployee::class)->create($this->firm, $this->input(['occupation_code' => '2423.08']), $this->owner);
+            $this->fail('A code missing from the list is rejected.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['occupation_code'], array_keys($e->errors()));
+        }
+
+        $this->assertSame('2411.01', app(SaveEmployee::class)->create($this->firm, $this->input(['occupation_code' => '2411.01']), $this->owner)->occupation_code);
     }
 
     public function test_update_keeps_encrypted_fields_when_left_blank(): void

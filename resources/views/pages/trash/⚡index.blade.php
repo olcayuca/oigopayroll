@@ -1,8 +1,10 @@
 <?php
 
 use App\Actions\Trash\ManageTrash;
+use App\Enums\Permission;
 use App\Enums\Portal;
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\Workplace;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -101,6 +103,25 @@ new #[Title('Çöp Kutusu')] class extends Component {
     }
 
     /**
+     * @return LengthAwarePaginator<int, Employee>
+     */
+    #[Computed]
+    public function employees(): LengthAwarePaginator
+    {
+        $search = trim($this->search);
+
+        return Employee::onlyTrashed()
+            ->with(['firm', 'workplace' => fn ($query) => $query->withTrashed()->with(['company' => fn ($query) => $query->withTrashed()])])
+            ->unless($this->admin, fn ($query) => $query->where('firm_id', $this->firmId)->whereIn('workplace_id', $this->viewableWorkplaceIds()))
+            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
+                ->where('registry_no', 'like', $search.'%')
+                ->orWhere('first_name', 'like', '%'.$search.'%')
+                ->orWhere('last_name', 'like', '%'.$search.'%')))
+            ->latest('deleted_at')
+            ->paginate(25, pageName: 'personel');
+    }
+
+    /**
      * @return Collection<int, \App\Models\AuditLog>
      */
     #[Computed]
@@ -108,9 +129,11 @@ new #[Title('Çöp Kutusu')] class extends Component {
     {
         $trash = app(ManageTrash::class);
 
-        return $this->tab === 'isyerleri'
-            ? $trash->deletions($this->workplaces->getCollection())
-            : $trash->deletions($this->companies->getCollection());
+        return match ($this->tab) {
+            'isyerleri' => $trash->deletions($this->workplaces->getCollection()),
+            'personel' => $trash->deletions($this->employees->getCollection()),
+            default => $trash->deletions($this->companies->getCollection()),
+        };
     }
 
     public function restore(string $type, int $id, ManageTrash $trash): void
@@ -129,19 +152,38 @@ new #[Title('Çöp Kutusu')] class extends Component {
         $this->attempt(fn () => $trash->purge($this->find($type, $id)), 'Kayıt kalıcı olarak silindi.');
     }
 
-    private function find(string $type, int $id): Company|Workplace
+    private function find(string $type, int $id): Company|Workplace|Employee
     {
-        $record = $type === 'company'
-            ? Company::onlyTrashed()->findOrFail($id)
-            : Workplace::onlyTrashed()->findOrFail($id);
+        $record = match ($type) {
+            'company' => Company::onlyTrashed()->findOrFail($id),
+            'employee' => Employee::onlyTrashed()->findOrFail($id),
+            default => Workplace::onlyTrashed()->findOrFail($id),
+        };
 
         // Panel users only reach their active firm's records.
         if (! $this->admin) {
-            $firmId = $record instanceof Company ? $record->firm_id : Company::withTrashed()->find($record->company_id)?->firm_id;
+            $firmId = $record instanceof Workplace ? Company::withTrashed()->find($record->company_id)?->firm_id : $record->firm_id;
             abort_unless($firmId === $this->firmId, 404);
         }
 
         return $record;
+    }
+
+    /**
+     * Workplaces of the active firm (deleted ones too) where the user may view personnel.
+     *
+     * @return list<int>
+     */
+    private function viewableWorkplaceIds(): array
+    {
+        return Workplace::withTrashed()->visibleTo(Auth::user())
+            ->whereIn('company_id', Company::withTrashed()->select('id')->where('firm_id', $this->firmId))
+            ->with(['company' => fn ($query) => $query->withTrashed()])
+            ->get()
+            ->filter(fn (Workplace $workplace) => Auth::user()->hasPermissionOn(Permission::EmployeeView, $workplace))
+            ->map(fn (Workplace $workplace): int => $workplace->id)
+            ->values()
+            ->all();
     }
 
     private function attempt(Closure $action, string $message): void
@@ -154,7 +196,7 @@ new #[Title('Çöp Kutusu')] class extends Component {
             return;
         }
 
-        unset($this->companies, $this->workplaces, $this->deletions);
+        unset($this->companies, $this->workplaces, $this->employees, $this->deletions);
         Flux::toast(variant: 'success', text: $message);
     }
 }; ?>
@@ -163,17 +205,17 @@ new #[Title('Çöp Kutusu')] class extends Component {
     <div>
         <flux:heading size="xl">Çöp Kutusu</flux:heading>
         <flux:text class="mt-1">
-            Silinen şirket ve işyerleri burada tutulur ve geri alınabilir.
+            Silinen şirket, işyeri ve personel kayıtları burada tutulur ve geri alınabilir.
             @if ($admin)
                 Kalıcı silme geri alınamaz; işlem kayıtları saklanır.
             @else
-                Bir işyerini geri almak için önce şirketi silinmişse şirketi geri alın.
+                Şirketi silinmiş işyerini ya da işyeri silinmiş personeli geri almak için önce üst kaydı geri alın.
             @endif
         </flux:text>
     </div>
 
-    <x-tabs :active="$tab" :tabs="['sirketler' => 'Şirketler', 'isyerleri' => 'İşyerleri']"
-        :counts="['sirketler' => $this->companies->total(), 'isyerleri' => $this->workplaces->total()]" />
+    <x-tabs :active="$tab" :tabs="['sirketler' => 'Şirketler', 'isyerleri' => 'İşyerleri', 'personel' => 'Personel']"
+        :counts="['sirketler' => $this->companies->total(), 'isyerleri' => $this->workplaces->total(), 'personel' => $this->employees->total()]" />
 
     <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Ara" class="max-w-sm" />
 
@@ -258,6 +300,53 @@ new #[Title('Çöp Kutusu')] class extends Component {
                 @empty
                     <flux:table.row>
                         <flux:table.cell colspan="5" class="py-10 text-center text-zinc-500">Silinmiş işyeri yok.</flux:table.cell>
+                    </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+    @endif
+
+    @if ($tab === 'personel')
+        <flux:table :paginate="$this->employees">
+            <flux:table.columns>
+                <flux:table.column>Personel</flux:table.column>
+                <flux:table.column>İşyeri</flux:table.column>
+                @if ($admin) <flux:table.column>Firma</flux:table.column> @endif
+                <flux:table.column>Silinme</flux:table.column>
+                <flux:table.column></flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @forelse ($this->employees as $employee)
+                    @php($deletion = $this->deletions->get($employee->id))
+                    <flux:table.row :key="'e'.$employee->id">
+                        <flux:table.cell>
+                            <div class="font-medium">{{ $employee->fullName() }}</div>
+                            <div class="text-xs text-zinc-500">Sicil {{ $employee->registry_no }}</div>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            {{ $employee->workplace?->company?->short_name }} / {{ $employee->workplace?->branch_name ?? '—' }}
+                            @if ($employee->workplace?->trashed() || $employee->workplace?->company?->trashed())
+                                <flux:badge size="sm" color="amber" inset="top bottom">Silinmiş</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        @if ($admin) <flux:table.cell>{{ $employee->firm->name ?? '—' }}</flux:table.cell> @endif
+                        <flux:table.cell class="whitespace-nowrap">
+                            {{ $employee->deleted_at?->format('d.m.Y H:i') }}
+                            @if ($deletion?->user) <div class="text-xs text-zinc-500">{{ $deletion->user->name }}</div> @endif
+                        </flux:table.cell>
+                        <flux:table.cell align="end" class="whitespace-nowrap">
+                            @can('restore', $employee)
+                                <flux:button size="sm" icon="arrow-uturn-left" wire:click="restore('employee', {{ $employee->id }})">Geri al</flux:button>
+                            @endcan
+                            @if ($admin)
+                                <flux:button size="sm" variant="danger" icon="trash" wire:click="purge('employee', {{ $employee->id }})"
+                                    wire:confirm="Sicil {{ $employee->registry_no }} kalıcı olarak silinecek. Bu işlem geri alınamaz. Devam edilsin mi?">Kalıcı sil</flux:button>
+                            @endif
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <flux:table.row>
+                        <flux:table.cell colspan="5" class="py-10 text-center text-zinc-500">Silinmiş personel yok.</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>

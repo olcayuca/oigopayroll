@@ -4,6 +4,7 @@ namespace App\Actions\Companies;
 
 use App\Enums\AuditEvent;
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
 use App\Support\Audit;
@@ -62,6 +63,11 @@ class SaveCompany
     {
         if ($company->workplaces()->exists()) {
             throw ValidationException::withMessages(['company' => 'İşyeri bulunan şirket silinemez; önce işyerlerini kaldırın.']);
+        }
+
+        // Personnel whose Firma is this company may work at another company's workplace (SGK firma).
+        if (Employee::query()->where('company_id', $company->id)->exists()) {
+            throw ValidationException::withMessages(['company' => 'Bu şirkete bağlı personel var; önce personeli taşıyın veya silin.']);
         }
 
         $company->delete();

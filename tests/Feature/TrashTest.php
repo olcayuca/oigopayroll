@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\Access\GrantAccess;
 use App\Actions\Companies\SaveCompany;
+use App\Actions\Employees\SaveEmployee;
 use App\Actions\Workplaces\SaveWorkplace;
 use App\Enums\AuditEvent;
 use App\Enums\Permission;
@@ -11,11 +12,14 @@ use App\Enums\Portal;
 use App\Models\AccessGrant;
 use App\Models\AuditLog;
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
 use App\Models\Workplace;
+use Database\Seeders\PayrollCodeSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -33,7 +37,7 @@ class TrashTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(ReferenceDataSeeder::class);
+        $this->seed([ReferenceDataSeeder::class, PayrollCodeSeeder::class]);
         $this->firm = Firm::factory()->create();
         $this->company = Company::factory()->for($this->firm)->create(['title' => 'Silinen Şirket A.Ş.']);
         $this->workplace = Workplace::factory()->create(['company_id' => $this->company->id, 'branch_name' => 'Silinen Şube']);
@@ -95,6 +99,49 @@ class TrashTest extends TestCase
         Livewire::test('pages::trash.index')->call('restore', 'company', $this->company->id)->assertNotFound();
 
         $this->assertTrue($this->company->fresh()?->trashed());
+    }
+
+    public function test_personnel_are_restored_after_their_workplace_and_purged_before_it(): void
+    {
+        $owner = User::factory()->create();
+        app(GrantAccess::class)->handle($owner, $this->firm, Permission::firmOwnerDefaults());
+        $this->actingAs($owner);
+        $employee = Employee::factory()->for($this->workplace)->create(['registry_no' => 'S-77', 'first_name' => 'Deniz']);
+
+        try {
+            app(SaveWorkplace::class)->delete($this->workplace);
+            $this->fail('A workplace with personnel cannot be deleted.');
+        } catch (ValidationException) {
+            $this->assertFalse($this->workplace->fresh()?->trashed());
+        }
+
+        app(SaveEmployee::class)->delete($employee);
+        app(SaveWorkplace::class)->delete($this->workplace);
+
+        $this->get(route('trash.index', ['sekme' => 'personel']))->assertOk()->assertSee('Sicil S-77')->assertDontSee('Geri al');
+        Livewire::test('pages::trash.index')->call('restore', 'employee', $employee->id)->assertForbidden();
+
+        Livewire::test('pages::trash.index')
+            ->call('restore', 'workplace', $this->workplace->id)
+            ->set('tab', 'personel')
+            ->assertSee('Geri al')
+            ->call('restore', 'employee', $employee->id);
+
+        $this->assertFalse($employee->fresh()?->trashed());
+        $this->assertSame(1, AuditLog::where('event', AuditEvent::EmployeeRestored)->count());
+
+        // Admin: the workplace cannot be purged while its personnel remain.
+        app(SaveEmployee::class)->delete($employee->fresh());
+        app(SaveWorkplace::class)->delete($this->workplace->fresh());
+        $this->onPortal(Portal::Admin);
+        $this->actingAs(User::factory()->superAdmin()->create());
+
+        Livewire::test('pages::trash.index')->call('purge', 'workplace', $this->workplace->id);
+        $this->assertNotNull(Workplace::withTrashed()->find($this->workplace->id));
+
+        Livewire::test('pages::trash.index')->call('purge', 'employee', $employee->id)->call('purge', 'workplace', $this->workplace->id);
+        $this->assertNull(Employee::withTrashed()->find($employee->id));
+        $this->assertNull(Workplace::withTrashed()->find($this->workplace->id));
     }
 
     public function test_admin_sees_all_firms_and_purges(): void

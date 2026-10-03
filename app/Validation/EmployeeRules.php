@@ -73,7 +73,8 @@ final class EmployeeRules
             'leave_manager_registry_no' => ['required', 'string', 'max:50'],
             'functional_manager_registry_no' => ['nullable', 'string', 'max:50'],
 
-            'occupation_code' => ['required', 'regex:/^\d{4}\.\d{2,3}$/'],
+            // Checked against Admin → Bordro Kodları → Meslek Kodları once that list is loaded.
+            'occupation_code' => ['required', 'regex:/^\d{4}\.\d{2,3}$/', ...(self::occupations() === [] ? [] : [Rule::in(self::occupations())])],
             'insurance_branch' => ['required', $choice(EmployeeOptions::INSURANCE_BRANCH)],
             'sgk_status' => ['required', $choice(EmployeeOptions::SGK_STATUS)],
             'employment_type' => ['required', $choice(EmployeeOptions::EMPLOYMENT_TYPE)],
@@ -138,6 +139,16 @@ final class EmployeeRules
     public static function documentTypes(): array
     {
         return once(fn () => array_values(array_map('strval', PayrollCode::query()->where('list', CodeList::DocumentTypes)->pluck('code')->all())));
+    }
+
+    /**
+     * Active SGK occupation codes (Admin → Bordro Kodları); empty until the list is loaded.
+     *
+     * @return list<string>
+     */
+    public static function occupations(): array
+    {
+        return once(fn () => array_values(array_map('strval', PayrollCode::query()->where('list', CodeList::Occupations)->where('is_active', true)->pluck('code')->all())));
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\Workplace;
 use App\Validation\WorkplaceRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 
@@ -54,7 +55,14 @@ new #[Title('İşyeri')] class extends PanelComponent {
         $this->authorize('delete', $this->workplace);
 
         $company = $this->workplace->company;
-        $saveWorkplace->delete($this->workplace);
+
+        try {
+            $saveWorkplace->delete($this->workplace);
+        } catch (ValidationException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
 
         Flux::toast(variant: 'success', text: 'İşyeri silindi.');
         $this->redirectRoute('companies.show', $company, navigate: true);
