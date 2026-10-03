@@ -5,18 +5,22 @@ namespace App\Exports;
 use App\Enums\AuditEvent;
 use App\Models\AuditLog;
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
 use App\Models\Workplace;
+use App\Support\EmployeeOptions;
 use App\Support\Fields\CompanyFields;
+use App\Support\Fields\EmployeeFields;
 use App\Support\Fields\Field;
 use App\Support\Fields\WorkplaceFields;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
- * Excel reports. Company / workplace columns follow the import templates, minus every
- * credential column: encrypted values never leave the system through an export.
+ * Excel reports. Company / workplace / personnel columns follow the import templates (a personnel
+ * export can be corrected and uploaded again), minus every credential and encrypted column
+ * (TCKN, IBAN, account no): encrypted values never leave the system through an export.
  */
 enum ExportType: string
 {
@@ -25,6 +29,7 @@ enum ExportType: string
     case Companies = 'sirketler';
     case Workplaces = 'isyerleri';
     case AuditLogs = 'islem-kayitlari';
+    case Employees = 'personel';
 
     public function label(): string
     {
@@ -34,6 +39,7 @@ enum ExportType: string
             self::Companies => 'Şirketler',
             self::Workplaces => 'İşyerleri',
             self::AuditLogs => 'İşlem Kayıtları',
+            self::Employees => 'Personel',
         };
     }
 
@@ -45,7 +51,18 @@ enum ExportType: string
             self::Companies => 'Tüm şirketler, içe aktarma şablonundaki sütunlarla.',
             self::Workplaces => 'Tüm işyerleri, şifre alanları hariç.',
             self::AuditLogs => 'Seçilen tarih aralığındaki işlem ve güvenlik kayıtları.',
+            self::Employees => 'Firmanın personeli, kurulum dosyası sütunlarıyla; TCKN, IBAN ve hesap no hariç.',
         };
+    }
+
+    /**
+     * Reports of Admin → Raporlar. Personnel are exported per firm from the panel only.
+     *
+     * @return list<self>
+     */
+    public static function adminReports(): array
+    {
+        return [self::Firms, self::Users, self::Companies, self::Workplaces, self::AuditLogs];
     }
 
     public function filename(): string
@@ -107,6 +124,21 @@ enum ExportType: string
                 'district_name' => $workplace->districtLabel(),
                 default => $workplace->getAttribute($key),
             })],
+            self::Employees => self::fieldColumns(EmployeeFields::all(), fn (Employee $employee, string $key) => match ($key) {
+                'company_name' => $employee->company->title,
+                'sgk_company_name' => $employee->workplace->company->title,
+                'workplace_name' => $employee->workplace->branch_name,
+                'upper_unit' => $employee->upperUnit?->name,
+                'unit' => $employee->unit?->name,
+                'job_family' => $employee->jobFamily?->name,
+                'title' => $employee->title?->name,
+                'position' => $employee->position?->name,
+                'level' => $employee->level?->name,
+                'cost_group' => $employee->costGroup?->name,
+                'tax_exemption_start_month' => EmployeeOptions::MONTHS[$employee->tax_exemption_start_month] ?? null,
+                'shift_start', 'shift_end' => $employee->getAttribute($key) ? substr((string) $employee->getAttribute($key), 0, 5) : null,
+                default => is_bool($value = $employee->getAttribute($key)) ? ($value ? 'Evet' : 'Hayır') : $value,
+            }),
             self::AuditLogs => [
                 new ExportColumn('Tarih', fn (AuditLog $log) => $log->created_at, ExportColumn::DATETIME),
                 new ExportColumn('Kullanıcı', fn (AuditLog $log) => $log->user?->name),
@@ -132,6 +164,7 @@ enum ExportType: string
             self::Companies => $this->prepare(Company::query()),
             self::Workplaces => $this->prepare(Workplace::query()),
             self::AuditLogs => $this->prepare(AuditLog::query()),
+            self::Employees => $this->prepare(Employee::query()),
         };
     }
 
@@ -155,6 +188,8 @@ enum ExportType: string
             self::Workplaces => $query->with(['company.firm', 'riskClass', 'laborSector', 'province', 'district'])
                 ->orderBy('company_id')->orderBy('workplace_no'),
             self::AuditLogs => $query->with('user')->latest('id'),
+            self::Employees => $query->with(['company', 'workplace.company', 'upperUnit', 'unit', 'jobFamily', 'title', 'position', 'level', 'costGroup'])
+                ->orderBy('registry_no'),
         };
     }
 
@@ -168,7 +203,7 @@ enum ExportType: string
         $columns = [];
 
         foreach ($fields as $field) {
-            if ($field->type === Field::SECRET || in_array($field->key, Workplace::SECRET_FIELDS, true)) {
+            if ($field->type === Field::SECRET || in_array($field->key, [...Workplace::SECRET_FIELDS, ...Employee::SECRET_FIELDS], true)) {
                 continue;
             }
 

@@ -202,7 +202,7 @@ new #[Title('Raporlar')] class extends Component {
         <flux:callout icon="shield-check" text="Dışa aktarılan dosyalarda işyeri şifreleri ve kimlik bilgisi alanları yer almaz. Dosyalar kişisel veri içerebilir; paylaşırken dikkat edin." />
 
         <div class="grid gap-4 md:grid-cols-2">
-            @foreach (ExportType::cases() as $type)
+            @foreach (ExportType::adminReports() as $type)
                 <flux:card class="flex flex-col gap-3">
                     <div>
                         <flux:heading>{{ $type->label() }}</flux:heading>

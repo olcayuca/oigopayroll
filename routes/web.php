@@ -53,7 +53,7 @@ Route::domain(config('portals.admin'))
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
         Route::livewire('raporlar', 'pages::admin.reports.index')->name('reports.index');
         Route::get('raporlar/indir/{report}', DownloadReport::class)
-            ->whereIn('report', array_column(ExportType::cases(), 'value'))->name('reports.download');
+            ->whereIn('report', array_column(ExportType::adminReports(), 'value'))->name('reports.download');
         Route::get('kvkk/basvurular/{kvkkRequest}/veri', DownloadPersonalData::class)->name('kvkk.export');
     });
 
@@ -91,7 +91,7 @@ Route::domain(config('portals.panel'))
 
         Route::livewire('cop-kutusu', 'pages::trash.index')->name('trash.index');
         Route::livewire('belgeler', 'pages::panel.documents.index')->name('documents.index');
-        Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri'])->name('exports.download');
+        Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri', 'personel'])->name('exports.download');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
         Route::livewire('firma-erisimleri', 'pages::panel.firm-access.index')->name('firm-access.index');

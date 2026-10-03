@@ -103,6 +103,8 @@ new #[Title('Personel')] class extends PanelComponent {
     <x-panel.page-header :crumbs="['Kurulum' => null, 'Personel' => null, $this->firm->name => null]" title="Personel"
         subtitle="Çalışan kayıtları ve bordro parametreleri. Alanlar müşteri kurulum dosyasıyla (Personel Bilgileri) birebir aynıdır.">
         <x-slot:actions>
+            <flux:button icon="arrow-down-tray" data-test="employees-export"
+                :href="route('exports.download', ['type' => 'personel', 'sirket' => $companyId ?: null, 'durum' => $status ?: null])">Excel İndir</flux:button>
             @can('import', [\App\Models\Employee::class, $this->firm])
                 <flux:button icon="table-cells" :href="route('imports.create', 'personel')" wire:navigate>Excel ile Aktar</flux:button>
             @endcan

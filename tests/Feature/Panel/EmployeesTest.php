@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -169,6 +170,34 @@ class EmployeesTest extends TestCase
         }
 
         $this->assertSame('2411.01', app(SaveEmployee::class)->create($this->firm, $this->input(['occupation_code' => '2411.01']), $this->owner)->occupation_code);
+    }
+
+    public function test_export_uses_setup_file_columns_without_secrets_and_can_be_uploaded_again(): void
+    {
+        $employee = app(SaveEmployee::class)->create($this->firm, $this->input(), $this->owner);
+        app(SaveEmployee::class)->create($this->firm, $this->input(['registry_no' => '1002', 'tckn' => '10000000078', 'mobile_phone' => '+90 532 000 00 01']), $this->owner)
+            ->update(['status' => Employee::LEFT]);
+
+        $response = $this->get(route('exports.download', ['type' => 'personel', 'durum' => 'aktif']))->assertOk();
+        $path = $response->baseResponse->getFile()->getPathname();
+        $sheet = IOFactory::load($path)->getActiveSheet()->toArray(null, true, false, false);
+
+        $this->assertSame('Sicil No', $sheet[0][0]);
+        $this->assertNotContains('TC Kimlik No', $sheet[0]);
+        $this->assertNotContains('Iban Numarası', $sheet[0]);
+        $this->assertCount(2, $sheet, 'Header + the one active employee.');
+        $row = array_combine($sheet[0], $sheet[1]);
+        $this->assertSame(['1001', 'Oigo Yazılım A.Ş.', 'Merkez Ofis', 'Genel Müdürlük', 'Ocak', '09:00', 'Hayır'], [
+            $row['Sicil No'], $row['Firma'], $row['İş Yeri Şube Adı'], $row['Üst Birim'], $row['Vergi İstisnası Başlangıç Ayı'],
+            $row['Mesai Başlangıç Saati'], $row['Asgari Ücretli'],
+        ]);
+        $this->assertStringNotContainsString('10000000146', (string) json_encode($sheet));
+
+        // Uploading the export again matches the record by sicil no and finds nothing to fix.
+        $import = app(ImportService::class)->preview(ImportType::Employee, $this->firm, $path, 'personel.xlsx', $this->owner);
+        $this->assertSame([1, 0], [$import->total_rows, $import->error_rows], json_encode($import->rows->pluck('errors'), JSON_UNESCAPED_UNICODE));
+        $this->assertNotSame('create', $import->rows->first()?->action);
+        $this->assertSame($employee->id, Employee::where('registry_no', '1001')->sole()->id);
     }
 
     public function test_update_keeps_encrypted_fields_when_left_blank(): void
