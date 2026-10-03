@@ -50,6 +50,14 @@ final class FirmSettings
     }
 
     /**
+     * Abonelik: charge the saved card automatically when an invoice is due (on unless switched off).
+     */
+    public static function autoPay(Firm $firm): bool
+    {
+        return (bool) ($firm->settings['billing']['auto_pay'] ?? true);
+    }
+
+    /**
      * İki adımlı doğrulama zorunlu for every user working in this firm.
      */
     public static function requiresTwoFactor(Firm $firm): bool

@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             RequirePolicyConsent::class,
         ]);
 
+        // iyzico posts the payment result from its own site (no CSRF token, no session cookie).
+        $middleware->validateCsrfTokens(except: ['odeme/sonuc']);
+
         // Stay on the portal the guest was trying to reach.
         $middleware->redirectGuestsTo(fn (Request $request) => $request->getSchemeAndHttpHost().'/login');
         $middleware->redirectUsersTo(fn (Request $request) => $request->getSchemeAndHttpHost().'/');

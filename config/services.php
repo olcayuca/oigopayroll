@@ -35,6 +35,14 @@ return [
         ],
     ],
 
+    // Abonelik ödemeleri (App\Billing\IyzicoGateway): card storage on iyzico's hosted form + monthly charges.
+    // Without keys the card fields are hidden; base_url is the sandbox until IYZICO_BASE_URL is set to https://api.iyzipay.com.
+    'iyzico' => [
+        'key' => env('IYZICO_API_KEY'),
+        'secret' => env('IYZICO_SECRET_KEY'),
+        'base_url' => env('IYZICO_BASE_URL', 'https://sandbox-api.iyzipay.com'),
+    ],
+
     // Panel kurulum asistanı (App\Assistant\SetupAssistant). Without a key it only offers its shortcuts.
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Firms\ManageContracts;
+use App\Billing\SubscriptionBilling;
 use App\Models\AuditLog;
 use App\Notifications\DeliverAnnouncements;
 use App\Notifications\DeliverDueReminders;
@@ -25,6 +26,13 @@ Schedule::call(fn () => app(DeliverDueReminders::class)->run())
 
 Schedule::call(fn () => app(DeliverAnnouncements::class)->run())
     ->everyMinute()->description('Yayına giren duyuruların bildirimi');
+
+// Abonelik: issue the current period's invoices, then charge due ones from saved cards.
+Schedule::call(function () {
+    $billing = app(SubscriptionBilling::class);
+    $billing->issueInvoices();
+    $billing->chargeDue();
+})->dailyAt('07:00')->description('Abonelik faturaları ve otomatik kart çekimi');
 
 Schedule::command('hrd:yedek')->dailyAt('02:30')->withoutOverlapping()->description('Günlük veritabanı yedeği');
 

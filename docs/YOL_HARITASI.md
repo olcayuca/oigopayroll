@@ -194,6 +194,19 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Şifre alanları maskeli, yetkiyle görüntüleme (loglu)
 - ✅ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
 
+### 3.2.3 Abonelik / Lisans (panel → Yönetim → Abonelik, admin → Faturalar)
+- ✅ Fatura sözleşmeden (Admin → Sözleşmeler): her dönem başında otomatik; aylık sabit, aylık çalışan başı (aktif personel sayısı),
+  yıllık, tek seferlik; ücret KDV hariç, KDV oranı config/billing.php (varsayılan %20); numara HRD-YYYY-000001
+- ✅ Kart: iyzico'nun ödeme sayfasında (Checkout Form, 3D Secure) "Kartımı kaydet" ile; sistemde yalnızca iyzico token'ları (şifreli)
+  ve kartın markası / son 4 hanesi. Fatura yokken kart eklemek için 1 TL çekilip hemen iade edilir
+- ✅ Otomatik ödeme: vadesi gelen fatura kayıtlı karttan çekilir (her gün 07:00); başarısızsa 3 gün arayla en fazla 3 deneme,
+  firma yöneticilerine ve HRD'ye bildirim; firma otomatik ödemeyi kapatabilir; "Kartla öde" ile elle ödeme
+- ✅ Admin → Faturalar: ödenmemiş / başarısız / ödenen; karttan şimdi çek, havale ile ödendi, iptal; faturaları şimdi oluştur
+- ✅ Yetki: firma düzenleme yetkisi olan müşteri kullanıcıları ve HRD
+- ⬜ Canlıya alma: iyzico üye işyeri hesabı, IYZICO_API_KEY / IYZICO_SECRET_KEY, önce sandbox'ta uçtan uca deneme;
+  kayıtlı kartla 3D'siz (tekrarlayan) çekim izni iyzico'dan açtırılmalı
+- ⬜ e-Fatura / e-Arşiv entegrasyonu (resmi fatura), fatura PDF'i; paket / limit tanımları
+
 ### 3.2.2 Ayarlar (panel → Yönetim → Ayarlar, prototip 35-ayarlar)
 - ✅ Şirket Bilgileri: unvan / VKN (HRD yönetir, salt okunur), yetkili, telefon, e-posta, KEP, web, MERSİS, yazışma adresi
 - ✅ Bordro Varsayılanları: ödeme günü, ücret tipi, net yuvarlama, FM çarpanı, aylık gün, Hazine indirimi, asgari ücret istisnası,

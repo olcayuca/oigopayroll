@@ -43,6 +43,8 @@
             ['label' => 'Destek', 'route' => $firm ? 'support.index' : null, 'active' => request()->routeIs('support.*'),
                 'count' => $firm ? (\App\Models\SupportTicket::query()->visibleInPanel($user, $firm)->where('status', \App\Enums\TicketStatus::AwaitingCustomer)->count() ?: null) : null],
             ['label' => 'Çöp Kutusu', 'route' => 'trash.index', 'active' => request()->routeIs('trash.*')],
+            $firm && $user->can('manageBilling', $firm) ? ['label' => 'Abonelik', 'route' => 'billing.index', 'active' => request()->routeIs('billing.*'),
+                'count' => \App\Models\Invoice::query()->where('firm_id', $firm->id)->open()->count() ?: null] : null,
             ['label' => 'Ayarlar', 'route' => $firm ? 'settings.index' : 'profile.edit', 'active' => request()->routeIs('settings.*', 'profile.*', 'security.*', 'kvkk.edit', 'appearance.*')],
         ])),
     ];

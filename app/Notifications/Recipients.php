@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\Permission;
 use App\Enums\ScopeType;
 use App\Enums\UserType;
 use App\Models\AccessGrant;
@@ -31,6 +32,18 @@ final class Recipients
 
         return User::query()->whereIn('id', $ids)->where('is_active', true)->get()
             ->filter(fn (User $user) => $user->mayWorkInFirm($firm->id))
+            ->values();
+    }
+
+    /**
+     * Abonelik: client users who may update the firm (owners / managers).
+     *
+     * @return Collection<int, User>
+     */
+    public static function billing(Firm $firm): Collection
+    {
+        return self::firm($firm)
+            ->filter(fn (User $user) => $user->type === UserType::ClientUser && $user->hasPermissionOn(Permission::FirmUpdate, $firm))
             ->values();
     }
 

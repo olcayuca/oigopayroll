@@ -1,6 +1,7 @@
 <?php
 
 use App\Exports\ExportType;
+use App\Http\Controllers\BillingCallback;
 use App\Http\Controllers\DownloadFirmDocument;
 use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
@@ -33,6 +34,7 @@ Route::domain(config('portals.admin'))
 
         Route::livewire('firmalar', 'pages::admin.firms.index')->name('firms.index');
         Route::livewire('destek-talepleri', 'pages::admin.support.index')->name('support.index');
+        Route::livewire('faturalar', 'pages::admin.billing.index')->name('billing.index');
         Route::livewire('destek-talepleri/{ticket}', 'pages::support.show')->name('support.show');
         Route::livewire('firmalar/excel', 'pages::admin.firms.import')->name('firms.import');
         Route::get('firmalar/excel/sablon', DownloadFirmTemplate::class)->name('firms.template');
@@ -65,6 +67,7 @@ Route::domain(config('portals.admin'))
 Route::domain(config('portals.panel'))->group(function () {
     Route::get('destek/{token}', [ImpersonationController::class, 'start'])->middleware('throttle:20,1')->name('impersonation.start');
     Route::post('destek/bitir', [ImpersonationController::class, 'stop'])->middleware('auth')->name('impersonation.stop');
+    Route::post('odeme/sonuc', BillingCallback::class)->middleware('throttle:30,1')->name('billing.callback');
 });
 
 // panel.siteadi.com: client firms
@@ -101,6 +104,7 @@ Route::domain(config('portals.panel'))
 
         Route::livewire('ayarlar', 'pages::panel.settings.index')->name('settings.index');
         Route::livewire('duyurular', 'pages::panel.announcements.index')->name('announcements.index');
+        Route::livewire('abonelik', 'pages::panel.billing.index')->name('billing.index');
         Route::get('firma-logo/{firm}', ShowFirmLogo::class)->name('firms.logo');
 
         Route::livewire('destek-talepleri', 'pages::panel.support.index')->name('support.index');

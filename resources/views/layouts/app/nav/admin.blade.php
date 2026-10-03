@@ -28,6 +28,15 @@
         >
             Destek Talepleri
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="banknotes"
+            :href="route('admin.billing.index')"
+            :current="request()->routeIs('admin.billing.*')"
+            :badge="\App\Models\Invoice::where('status', \App\Models\Invoice::FAILED)->count() ?: null"
+            wire:navigate
+        >
+            Faturalar
+        </flux:sidebar.item>
         <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
             Kullanıcılar
         </flux:sidebar.item>

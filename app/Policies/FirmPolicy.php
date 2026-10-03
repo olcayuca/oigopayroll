@@ -56,6 +56,14 @@ class FirmPolicy
     }
 
     /**
+     * Abonelik / lisans: contract, invoices and the saved card — client users who may update the firm, and HRD.
+     */
+    public function manageBilling(User $user, Firm $firm): bool
+    {
+        return $user->hasPermissionOn(Permission::FirmUpdate, $firm);
+    }
+
+    /**
      * Destek: every ticket of the firm (not only one's own) — HRD staff and firm-level managers.
      */
     public function viewAllSupportTickets(User $user, Firm $firm): bool

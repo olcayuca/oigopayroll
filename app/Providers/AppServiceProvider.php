@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Billing\IyzicoGateway;
+use App\Billing\PaymentGateway;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -17,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGateway::class, IyzicoGateway::class);
     }
 
     /**

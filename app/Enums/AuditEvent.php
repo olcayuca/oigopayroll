@@ -38,6 +38,12 @@ enum AuditEvent: string
     case FirmSetupApprovalRevoked = 'firm.setup_approval_revoked';
     case SupportTicketOpened = 'support.ticket_opened';
     case SupportTicketStatusChanged = 'support.status_changed';
+    case BillingInvoicePaid = 'billing.invoice_paid';
+    case BillingPaymentFailed = 'billing.payment_failed';
+    case BillingInvoiceVoided = 'billing.invoice_voided';
+    case BillingCardSaved = 'billing.card_saved';
+    case BillingCardRemoved = 'billing.card_removed';
+    case BillingSettingsChanged = 'billing.settings_changed';
     case SpecialistAssigned = 'firm.specialist_assigned';
     case DocumentUploaded = 'firm.document_uploaded';
     case DocumentDeleted = 'firm.document_deleted';
@@ -124,6 +130,12 @@ enum AuditEvent: string
             self::FirmSetupApprovalRevoked => 'Kurulum onayı kaldırıldı',
             self::SupportTicketOpened => 'Destek talebi açıldı',
             self::SupportTicketStatusChanged => 'Destek talebi durumu değişti',
+            self::BillingInvoicePaid => 'Fatura ödendi',
+            self::BillingPaymentFailed => 'Ödeme alınamadı',
+            self::BillingInvoiceVoided => 'Fatura iptal edildi',
+            self::BillingCardSaved => 'Kart kaydedildi',
+            self::BillingCardRemoved => 'Kart kaldırıldı',
+            self::BillingSettingsChanged => 'Otomatik ödeme ayarı değişti',
             self::SpecialistAssigned => 'Sorumlu uzman değişti',
             self::DocumentUploaded => 'Firma belgesi yüklendi',
             self::DocumentDeleted => 'Firma belgesi silindi',
@@ -199,6 +211,7 @@ enum AuditEvent: string
             'definition' => 'Tanımlar',
             'import' => 'Aktarım',
             'support' => 'Destek',
+            'billing' => 'Abonelik',
             'system' => 'Sistem',
             'kvkk' => 'KVKK',
         ];
