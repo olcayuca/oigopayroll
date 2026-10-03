@@ -37,7 +37,7 @@ class RowMapper
             ImportType::Company => $this->company($row),
             ImportType::Workplace => $this->workplace($row),
             // Personnel values are normalised with the firm context (EmployeeInput) in ImportService.
-            ImportType::Employee => ['data' => $row, 'errors' => []],
+            ImportType::Employee, ImportType::Definition => ['data' => $row, 'errors' => []],
         };
     }
 

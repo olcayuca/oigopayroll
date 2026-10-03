@@ -126,6 +126,7 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         return match ($this->importType) {
             ImportType::Company => ['company_no' => 'Şirket No', 'title' => 'Unvan', 'tax_number' => 'Vergi No'],
             ImportType::Employee => ['registry_no' => 'Sicil No', 'first_name' => 'Adı', 'last_name' => 'Soyadı', 'company_name' => 'Firma', 'workplace_name' => 'Şube'],
+            ImportType::Definition => ['type' => 'Tür', 'name' => 'Ad', 'code' => 'Kod', 'parent' => 'Üst Tanım', 'is_active' => 'Durum'],
             default => ['company_no' => 'Şirket No', 'company_name' => 'Şirket', 'workplace_no' => 'İşyeri No', 'branch_name' => 'Şube Adı', 'sgk_registry_no' => 'SGK Sicil No'],
         };
     }
@@ -146,6 +147,7 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         return match ($this->importType) {
             ImportType::Company => 'şirket numarası',
             ImportType::Employee => 'sicil numarası',
+            ImportType::Definition => 'tür + kod (kod yoksa tür + ad)',
             default => 'şirket + işyeri numarası',
         };
     }
@@ -156,6 +158,7 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         :crumbs="[match ($this->importType) {
             \App\Enums\ImportType::Company => 'Şirketler',
             \App\Enums\ImportType::Employee => 'Personel',
+            \App\Enums\ImportType::Definition => 'Tanımlar',
             default => 'İşyerleri',
         } => route($this->importType->indexRoute()), 'Excel ile Aktarım' => null]"
         :back="route($this->importType->indexRoute())"
@@ -168,6 +171,9 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         @endif
         {{ ucfirst($this->matchText()) }} eşleşen satırlar güncellenir, diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir;
         şifreli alanların (şifreler{{ $this->importType === \App\Enums\ImportType::Employee ? ', TCKN, IBAN, hesap no' : '' }}) sütunları boş veya yoksa mevcut değerler korunur.
+        @if ($this->importType === \App\Enums\ImportType::Definition)
+            Tüm tanım türleri tek sayfada yüklenir. Birimin üst birimi, pozisyonun birimi "Üst Tanım" sütununda verilir; listede yoksa onayda oluşturulur.
+        @endif
         @if ($this->importType === \App\Enums\ImportType::Employee)
             Birim, üst birim, unvan, pozisyon gibi tanımlar listede yoksa onayda otomatik oluşturulur.
         @endif

@@ -166,7 +166,13 @@ new #[Title('Tanımlar')] class extends PanelComponent {
     @php $canManage = auth()->user()->can('manageDefinitions', $this->firm); @endphp
 
     <x-panel.page-header :crumbs="['Kurulum' => null, 'Tanımlar' => null, $this->firm->name => null]" title="Tanımlar"
-        subtitle="Personel kayıtlarında seçilen organizasyon listeleri buradan yönetilir. Excel ile personel aktarırken listede olmayanlar otomatik eklenir." />
+        subtitle="Personel kayıtlarında seçilen organizasyon listeleri buradan yönetilir. Excel ile personel aktarırken listede olmayanlar otomatik eklenir.">
+        @if ($canManage)
+            <x-slot:actions>
+                <flux:button icon="table-cells" :href="route('imports.create', 'tanim')" wire:navigate>Excel ile Aktar</flux:button>
+            </x-slot:actions>
+        @endif
+    </x-panel.page-header>
 
     <div class="grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
         <nav class="rounded-2xl border border-line bg-white p-2" aria-label="Tanım türleri">

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DefinitionType;
+use App\Support\Text;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -40,6 +41,21 @@ class Definition extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Definition::class, 'parent_id');
+    }
+
+    /**
+     * A free code derived from the name ("İnsan Kaynakları" → "INSANKAY", "INSANKAY2", …).
+     */
+    public static function uniqueCode(Firm $firm, DefinitionType $type, string $name): string
+    {
+        $base = mb_strtoupper(mb_substr(Text::key($name), 0, 8)) ?: 'TANIM';
+        $code = $base;
+
+        for ($i = 2; self::query()->ofType($firm, $type)->where('code', $code)->exists(); $i++) {
+            $code = $base.$i;
+        }
+
+        return $code;
     }
 
     /**

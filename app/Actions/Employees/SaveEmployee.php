@@ -10,7 +10,6 @@ use App\Models\Firm;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\AuditChanges;
-use App\Support\Text;
 use App\Validation\EmployeeInput;
 use App\Validation\EmployeeRules;
 use Illuminate\Support\Facades\DB;
@@ -148,7 +147,7 @@ class SaveEmployee
             $definition = EmployeeInput::findDefinition($firm, $type, $name) ?? Definition::create([
                 'firm_id' => $firm->id,
                 'type' => $type,
-                'code' => $this->uniqueCode($firm, $type, $name),
+                'code' => Definition::uniqueCode($firm, $type, $name),
                 'name' => $name,
                 'parent_id' => $parentId,
             ]);
@@ -157,17 +156,5 @@ class SaveEmployee
         }
 
         return $data;
-    }
-
-    private function uniqueCode(Firm $firm, DefinitionType $type, string $name): string
-    {
-        $base = mb_strtoupper(mb_substr(Text::key($name), 0, 8)) ?: 'TANIM';
-        $code = $base;
-
-        for ($i = 2; Definition::query()->ofType($firm, $type)->where('code', $code)->exists(); $i++) {
-            $code = $base.$i;
-        }
-
-        return $code;
     }
 }

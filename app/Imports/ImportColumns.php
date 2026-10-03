@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Enums\ImportType;
 use App\Support\Fields\CompanyFields;
+use App\Support\Fields\DefinitionFields;
 use App\Support\Fields\EmployeeFields;
 use App\Support\Fields\Field;
 use App\Support\Fields\FirmFields;
@@ -22,6 +23,7 @@ final class ImportColumns
             ImportType::Company => CompanyFields::all(),
             ImportType::Workplace => WorkplaceFields::all(),
             ImportType::Employee => EmployeeFields::all(),
+            ImportType::Definition => DefinitionFields::all(),
         };
     }
 

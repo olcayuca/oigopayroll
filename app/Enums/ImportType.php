@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use App\Models\Company;
+use App\Models\Definition;
 use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\Workplace;
@@ -18,6 +19,7 @@ enum ImportType: string
     case Company = 'company';
     case Workplace = 'workplace';
     case Employee = 'employee';
+    case Definition = 'definition';
 
     /**
      * URL segment (panel: aktarim/sirket, aktarim/isyeri; admin: firma).
@@ -29,6 +31,7 @@ enum ImportType: string
             self::Company => 'sirket',
             self::Workplace => 'isyeri',
             self::Employee => 'personel',
+            self::Definition => 'tanim',
         };
     }
 
@@ -42,6 +45,7 @@ enum ImportType: string
             self::Company => 'Şirketler',
             self::Workplace => 'İşyerleri',
             self::Employee => 'Personel Bilgileri',
+            self::Definition => 'Tanımlar',
         };
     }
 
@@ -52,13 +56,14 @@ enum ImportType: string
             self::Company => 'HRD_Sirket_Sablonu.xlsx',
             self::Workplace => 'HRD_Isyeri_Sablonu.xlsx',
             self::Employee => 'HRD_Personel_Sablonu.xlsx',
+            self::Definition => 'HRD_Tanim_Sablonu.xlsx',
         };
     }
 
     /**
      * Model class whose policy authorizes the import ("import" ability).
      *
-     * @return class-string<Firm|Company|Workplace|Employee>
+     * @return class-string<Firm|Company|Workplace|Employee|Definition>
      */
     public function modelClass(): string
     {
@@ -67,6 +72,7 @@ enum ImportType: string
             self::Company => Company::class,
             self::Workplace => Workplace::class,
             self::Employee => Employee::class,
+            self::Definition => Definition::class,
         };
     }
 
@@ -78,6 +84,7 @@ enum ImportType: string
         return match ($this) {
             self::Company => 'companies.index',
             self::Employee => 'employees.index',
+            self::Definition => 'definitions.index',
             default => 'workplaces.index',
         };
     }
@@ -103,6 +110,7 @@ enum ImportType: string
             self::Company => 'Şirket',
             self::Workplace => 'İşyeri',
             self::Employee => 'Personel',
+            self::Definition => 'Tanım',
         };
     }
 }

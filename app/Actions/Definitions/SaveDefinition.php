@@ -23,6 +23,35 @@ class SaveDefinition
      */
     public function save(Firm $firm, DefinitionType $type, array $input, ?Definition $definition = null): Definition
     {
+        $values = $this->validate($firm, $type, $input, $definition);
+        $labels = ['code' => 'Kod', 'name' => 'Ad', 'is_active' => 'Aktif', 'parent_id' => $type->parentType()?->singular() ?? 'Üst kayıt', 'extra' => 'Ek bilgiler'];
+
+        if ($definition) {
+            $before = AuditChanges::snapshot($definition);
+            $definition->update($values);
+            $changes = AuditChanges::between($definition, $before, $labels);
+            $verb = 'güncellendi';
+        } else {
+            $definition = Definition::create([...$values, 'firm_id' => $firm->id, 'type' => $type]);
+            $changes = AuditChanges::created($definition, ['code', 'name', 'parent_id'], $labels);
+            $verb = 'eklendi';
+        }
+
+        if ($changes !== []) {
+            Audit::log(AuditEvent::DefinitionChanged, "{$type->singular()} {$verb}: {$definition->code} {$definition->name}", $definition, ['changes' => $changes]);
+        }
+
+        return $definition;
+    }
+
+    /**
+     * Validate without saving (also used by the Excel import preview).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{code: string, name: string, is_active: bool, parent_id: int|null, extra: array<string, mixed>|null}
+     */
+    public function validate(Firm $firm, DefinitionType $type, array $input, ?Definition $definition = null): array
+    {
         $input = array_map(fn ($value) => is_string($value) ? (trim($value) === '' ? null : trim($value)) : $value, $input);
 
         $rules = [
@@ -44,32 +73,13 @@ class SaveDefinition
             ...collect($type->extraFields())->mapWithKeys(fn ($label, $key) => ["extra.{$key}" => $label])->all(),
         ])->validate();
 
-        $values = [
+        return [
             'code' => mb_strtoupper((string) $data['code']),
-            'name' => $data['name'],
-            'is_active' => $data['is_active'] ?? true,
-            'parent_id' => $data['parent_id'] ?? null,
+            'name' => (string) $data['name'],
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'parent_id' => isset($data['parent_id']) ? (int) $data['parent_id'] : null,
             'extra' => $type->extraFields() === [] ? null : array_intersect_key($data['extra'] ?? [], $type->extraFields()),
         ];
-
-        $labels = ['code' => 'Kod', 'name' => 'Ad', 'is_active' => 'Aktif', 'parent_id' => $type->parentType()?->singular() ?? 'Üst kayıt', 'extra' => 'Ek bilgiler'];
-
-        if ($definition) {
-            $before = AuditChanges::snapshot($definition);
-            $definition->update($values);
-            $changes = AuditChanges::between($definition, $before, $labels);
-            $verb = 'güncellendi';
-        } else {
-            $definition = Definition::create([...$values, 'firm_id' => $firm->id, 'type' => $type]);
-            $changes = AuditChanges::created($definition, ['code', 'name', 'parent_id'], $labels);
-            $verb = 'eklendi';
-        }
-
-        if ($changes !== []) {
-            Audit::log(AuditEvent::DefinitionChanged, "{$type->singular()} {$verb}: {$definition->code} {$definition->name}", $definition, ['changes' => $changes]);
-        }
-
-        return $definition;
     }
 
     /**

@@ -3,15 +3,18 @@
 namespace App\Imports;
 
 use App\Actions\Companies\SaveCompany;
+use App\Actions\Definitions\SaveDefinition;
 use App\Actions\Employees\SaveEmployee;
 use App\Actions\Firms\CreateFirm;
 use App\Actions\Workplaces\SaveWorkplace;
 use App\Enums\AuditEvent;
+use App\Enums\DefinitionType;
 use App\Enums\ImportStatus;
 use App\Enums\ImportType;
 use App\Models\Company;
 use App\Models\DataImport;
 use App\Models\DataImportRow;
+use App\Models\Definition;
 use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
@@ -52,6 +55,7 @@ class ImportService
         private SaveCompany $saveCompany,
         private SaveWorkplace $saveWorkplace,
         private SaveEmployee $saveEmployee,
+        private SaveDefinition $saveDefinition,
     ) {
         //
     }
@@ -190,7 +194,7 @@ class ImportService
     /**
      * Write one row: create, update, or nothing when the record is unchanged.
      */
-    private function apply(DataImport $import, ?Firm $firm, DataImportRow $row, ?User $user): Firm|Company|Workplace|Employee|null
+    private function apply(DataImport $import, ?Firm $firm, DataImportRow $row, ?User $user): Firm|Company|Workplace|Employee|Definition|null
     {
         if ($import->type === ImportType::Firm) {
             if ($user === null) {
@@ -216,6 +220,7 @@ class ImportService
 
         return match (true) {
             $plan['action'] === DataImportRow::UNCHANGED => null,
+            $import->type === ImportType::Definition => $this->applyDefinition($firm, $plan),
             $target instanceof Company => $this->saveCompany->update($target, $plan['input']),
             $target instanceof Workplace => $this->saveWorkplace->update($target, $plan['input']),
             $target instanceof Employee => $this->saveEmployee->update($target, $plan['input']),
@@ -231,7 +236,7 @@ class ImportService
      *
      * @param  array<string, mixed>  $data  mapped row
      * @param  list<string>  $columns  field keys present in the file
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}
      */
     private function plan(ImportType $type, ?Firm $firm, array $data, array $columns, ?User $user): array
     {
@@ -248,6 +253,7 @@ class ImportService
         return match ($type) {
             ImportType::Company => $this->planCompany($firm, self::clean($data), $columns, $user, $result),
             ImportType::Employee => $this->planEmployee($firm, self::clean($data), $columns, $user, $result),
+            ImportType::Definition => $this->planDefinition($firm, self::clean($data), $columns, $result),
             default => $this->planWorkplace($firm, $data, $columns, $user, $result),
         };
     }
@@ -255,8 +261,8 @@ class ImportService
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $columns
-     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}
      */
     private function planCompany(Firm $firm, array $data, array $columns, ?User $user, array $result): array
     {
@@ -282,8 +288,8 @@ class ImportService
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $columns
-     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}
      */
     private function planWorkplace(Firm $firm, array $data, array $columns, ?User $user, array $result): array
     {
@@ -332,8 +338,8 @@ class ImportService
      *
      * @param  array<string, mixed>  $data
      * @param  list<string>  $columns
-     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}  $result
-     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|null, company: Company|null}
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}
      */
     private function planEmployee(Firm $firm, array $data, array $columns, ?User $user, array $result): array
     {
@@ -391,6 +397,128 @@ class ImportService
         $errors = $this->mergeErrors($this->employeeErrors($normalized, $firm, $existing), $errors);
 
         return [...$result, 'errors' => $errors, 'input' => $input, 'target' => $existing, 'action' => $this->updateAction($existing, $normalized)];
+    }
+
+    /**
+     * Tanım rows: matched by type + code, otherwise type + name. A parent that does not exist yet is created on confirm.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $columns
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}  $result
+     * @return array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}
+     */
+    private function planDefinition(Firm $firm, array $data, array $columns, array $result): array
+    {
+        $text = fn (string $key): string => is_scalar($data[$key] ?? null) ? trim((string) $data[$key]) : '';
+        $type = self::definitionType($text('type'));
+
+        if ($type === null) {
+            return [...$result, 'errors' => ['type' => ['Tür tanınmadı: Üst Birim, Birim, İş Ailesi, Unvan, Pozisyon, Seviye veya Masraf Grubu olmalı.']]];
+        }
+
+        $name = $text('name');
+        $code = $text('code');
+        $existing = $code !== '' ? Definition::query()->ofType($firm, $type)->where('code', mb_strtoupper($code))->first() : null;
+        $existing ??= $name !== '' ? EmployeeInput::findDefinition($firm, $type, $name) : null;
+        $errors = [];
+
+        $parentId = $existing?->parent_id;
+        $newParent = null;
+
+        if (in_array('parent', $columns, true)) {
+            $parentType = $type->parentType();
+            $parentId = null;
+
+            if ($text('parent') !== '' && $parentType === null) {
+                $errors['parent'][] = "{$type->singular()} için üst tanım girilmez.";
+            } elseif ($text('parent') !== '' && $parentType !== null) {
+                $parentId = EmployeeInput::findDefinition($firm, $parentType, $text('parent'))?->id;
+                $newParent = $parentId === null ? $text('parent') : null;
+            }
+        }
+
+        $extra = $existing->extra ?? [];
+        foreach (array_keys($type->extraFields()) as $key) {
+            if (in_array($key, $columns, true)) {
+                $extra[$key] = $text($key) !== '' ? $text($key) : null;
+            }
+        }
+
+        $isActive = $existing->is_active ?? true;
+        if ($text('is_active') !== '') {
+            $isActive = match (Text::key($text('is_active'))) {
+                'aktif', 'evet', '1' => true,
+                'pasif', 'hayir', '0' => false,
+                default => null,
+            };
+            if ($isActive === null) {
+                $errors['is_active'][] = 'Durum "Aktif" ya da "Pasif" olmalı.';
+                $isActive = true;
+            }
+        }
+
+        $input = [
+            'type' => $type->value,
+            'code' => $code !== '' ? $code : ($existing->code ?? Definition::uniqueCode($firm, $type, $name !== '' ? $name : 'TANIM')),
+            'name' => $name !== '' ? $name : $existing?->name,
+            'is_active' => $isActive,
+            'parent_id' => $parentId,
+            'extra' => $extra,
+            'new_parent' => $newParent,
+        ];
+
+        try {
+            $values = $this->saveDefinition->validate($firm, $type, $input, $existing);
+        } catch (ValidationException $e) {
+            /** @var array<string, list<string>> $messages */
+            $messages = $e->errors();
+
+            return [...$result, 'input' => $input, 'errors' => $this->mergeErrors($messages, $errors)];
+        }
+
+        $action = DataImportRow::CREATE;
+
+        if ($existing !== null) {
+            $copy = clone $existing;
+            $copy->fill($values);
+            $action = $copy->isDirty() || $newParent !== null ? DataImportRow::UPDATE : DataImportRow::UNCHANGED;
+        }
+
+        return [...$result, 'input' => $input, 'errors' => $errors, 'target' => $existing, 'action' => $action];
+    }
+
+    /**
+     * @param  array{action: string, errors: array<string, list<string>>, input: array<string, mixed>, target: Company|Workplace|Employee|Definition|null, company: Company|null}  $plan
+     */
+    private function applyDefinition(Firm $firm, array $plan): Definition
+    {
+        $input = $plan['input'];
+        $type = DefinitionType::from((string) $input['type']);
+        $parentType = $type->parentType();
+
+        if (is_string($input['new_parent'] ?? null) && $parentType !== null) {
+            $parent = EmployeeInput::findDefinition($firm, $parentType, $input['new_parent'])
+                ?? $this->saveDefinition->save($firm, $parentType, ['code' => Definition::uniqueCode($firm, $parentType, $input['new_parent']), 'name' => $input['new_parent']]);
+            $input['parent_id'] = $parent->id;
+        }
+
+        return $this->saveDefinition->save($firm, $type, $input, $plan['target'] instanceof Definition ? $plan['target'] : null);
+    }
+
+    /**
+     * "Birim", "Birimler", "birim" → DefinitionType::Unit.
+     */
+    private static function definitionType(string $value): ?DefinitionType
+    {
+        $key = Text::key($value);
+
+        foreach (DefinitionType::cases() as $type) {
+            if (in_array($key, [Text::key($type->singular()), Text::key($type->label()), Text::key($type->value)], true)) {
+                return $type;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -546,6 +674,10 @@ class ImportService
         $keys = match ($type) {
             ImportType::Firm => ['tax_number' => $data['tax_number'] ?? null],
             ImportType::Company => ['company_no' => $data['company_no'] ?? null],
+            ImportType::Definition => [
+                'code' => filled($data['code'] ?? null) ? Text::key((string) ($data['type'] ?? '')).'|'.$data['code'] : null,
+                'name' => filled($data['name'] ?? null) ? Text::key((string) ($data['type'] ?? '')).'|'.Text::key((string) $data['name']) : null,
+            ],
             ImportType::Employee => [
                 'registry_no' => $data['registry_no'] ?? null,
                 'tckn' => isset($data['tckn']) && is_scalar($data['tckn']) ? preg_replace('/\D/', '', (string) $data['tckn']) : null,
