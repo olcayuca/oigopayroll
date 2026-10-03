@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // Panel kurulum asistanı (App\Assistant\SetupAssistant). Without a key the assistant is hidden.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ASSISTANT_MODEL', 'claude-opus-5-5'),
+        'effort' => env('ASSISTANT_EFFORT', 'low'),
+    ],
+
 ];

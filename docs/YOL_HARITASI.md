@@ -154,6 +154,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
   (şifre, TCKN, IBAN yalnızca "değiştirildi"); Excel aktarımı ve destek görünümü kaynağı; şirket, şube, kullanıcı, modül, tarih,
   kayıt filtreleri; Excel çıktısı; şirket / işyeri / personel / kullanıcı sayfalarından geçmişe bağlantı.
   Yetki: "İşlem geçmişini görüntüleme" (firma geneli ya da yalnızca yetkili şirket / şube); kullanıcı yönetimi yetkisi olanlara verildi
+- ✅ Kurulum asistanı (OigoAsistan, sağ alttaki yüzen düğme): yalnızca kurulum soruları (şirket, işyeri, tanımlar, personel,
+  kurulum dosyası / Excel aktarımı, sihirbaz); bordro hesaplama ve mevzuat sorularını uzmana yönlendirir. Claude (Anthropic API),
+  `ANTHROPIC_API_KEY` yoksa görünmez. Firmanın kurulum durumunu (eksik alanlar, sicil no) kullanıcının görebildiği kadarıyla bilir;
+  ad, TCKN, IBAN, şifre gönderilmez, yazılan TCKN / IBAN maskelenir. Sohbet oturumda, firma bazlı; kullanıcı başına 5 dakikada 20 soru
 - ⬜ Personel: işten çıkış, Excel'e dışa aktarma, çöp kutusundan geri alma, KVKK aydınlatma onayı (çalışan portalıyla)
 - ❓ Üst çubuktaki bağlam seçici: prototip firma içinde **şirket** seçtiriyor; şimdilik **firma** seçici + şirket kısayolları
 

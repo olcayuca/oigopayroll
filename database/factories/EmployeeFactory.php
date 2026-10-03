@@ -26,8 +26,9 @@ class EmployeeFactory extends Factory
 
         return [
             'workplace_id' => Workplace::factory(),
-            'company_id' => fn (array $attributes) => Workplace::find($attributes['workplace_id'])?->company_id,
-            'firm_id' => fn (array $attributes) => Workplace::find($attributes['workplace_id'])?->company?->firm_id,
+            'company_id' => fn (array $attributes) => Workplace::query()->whereKey($attributes['workplace_id'])->value('company_id'),
+            'firm_id' => fn (array $attributes) => Workplace::query()->join('companies', 'companies.id', '=', 'workplaces.company_id')
+                ->where('workplaces.id', $attributes['workplace_id'])->value('companies.firm_id'),
             'status' => Employee::ACTIVE,
             'registry_no' => (string) fake()->unique()->numberBetween(1000, 999999),
             'tckn' => $tckn,

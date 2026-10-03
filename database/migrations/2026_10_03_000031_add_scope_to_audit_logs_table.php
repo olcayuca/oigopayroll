@@ -28,25 +28,23 @@ return new class extends Migration
             $table->index(['workplace_id', 'created_at']);
         });
 
-        $morph = fn (string $class) => (new $class)->getMorphClass();
-
-        DB::table('audit_logs')->where('subject_type', $morph(Firm::class))
+        DB::table('audit_logs')->where('subject_type', (new Firm)->getMorphClass())
             ->update(['firm_id' => DB::raw('subject_id')]);
 
-        DB::table('audit_logs')->where('subject_type', $morph(Company::class))->orderBy('id')
+        DB::table('audit_logs')->where('subject_type', (new Company)->getMorphClass())->orderBy('id')
             ->each(function (object $log) {
                 $firmId = DB::table('companies')->where('id', $log->subject_id)->value('firm_id');
                 DB::table('audit_logs')->where('id', $log->id)->update(['firm_id' => $firmId, 'company_id' => $log->subject_id]);
             });
 
-        DB::table('audit_logs')->where('subject_type', $morph(Workplace::class))->orderBy('id')
+        DB::table('audit_logs')->where('subject_type', (new Workplace)->getMorphClass())->orderBy('id')
             ->each(function (object $log) {
                 $companyId = DB::table('workplaces')->where('id', $log->subject_id)->value('company_id');
                 $firmId = $companyId ? DB::table('companies')->where('id', $companyId)->value('firm_id') : null;
                 DB::table('audit_logs')->where('id', $log->id)->update(['firm_id' => $firmId, 'company_id' => $companyId, 'workplace_id' => $log->subject_id]);
             });
 
-        DB::table('audit_logs')->where('subject_type', $morph(Employee::class))->orderBy('id')
+        DB::table('audit_logs')->where('subject_type', (new Employee)->getMorphClass())->orderBy('id')
             ->each(function (object $log) {
                 $employee = DB::table('employees')->where('id', $log->subject_id)->first(['firm_id', 'company_id', 'workplace_id']);
                 if ($employee) {
