@@ -34,6 +34,8 @@ enum AuditEvent: string
     case FirmReactivated = 'firm.reactivated';
     case FirmLinked = 'firm.linked';
     case FirmUnlinked = 'firm.unlinked';
+    case FirmSetupApproved = 'firm.setup_approved';
+    case FirmSetupApprovalRevoked = 'firm.setup_approval_revoked';
     case SpecialistAssigned = 'firm.specialist_assigned';
     case DocumentUploaded = 'firm.document_uploaded';
     case DocumentDeleted = 'firm.document_deleted';
@@ -116,6 +118,8 @@ enum AuditEvent: string
             self::FirmReactivated => 'Firma aktifleştirildi',
             self::FirmLinked => 'Firmalar arası yetki verildi',
             self::FirmUnlinked => 'Firmalar arası yetki kaldırıldı',
+            self::FirmSetupApproved => 'Kurulum onaylandı',
+            self::FirmSetupApprovalRevoked => 'Kurulum onayı kaldırıldı',
             self::SpecialistAssigned => 'Sorumlu uzman değişti',
             self::DocumentUploaded => 'Firma belgesi yüklendi',
             self::DocumentDeleted => 'Firma belgesi silindi',

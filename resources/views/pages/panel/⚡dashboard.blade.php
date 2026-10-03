@@ -9,6 +9,7 @@ use App\Models\Firm;
 use App\Models\FirmDocument;
 use App\Models\Holiday;
 use App\Models\Workplace;
+use App\Support\SetupStatus;
 use App\Validation\FirmRules;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
@@ -101,6 +102,15 @@ new #[Title('Gösterge Paneli')] class extends Component {
     public function setupPercent(): int
     {
         return $this->workplaces->isEmpty() ? 0 : (int) round($this->workplaces->avg(fn (Workplace $workplace) => $workplace->setupPercent()));
+    }
+
+    /**
+     * All wizard steps done but the payroll specialist has not approved yet.
+     */
+    #[Computed]
+    public function awaitingApproval(): bool
+    {
+        return $this->firm !== null && $this->firm->setup_approved_at === null && (new SetupStatus(Auth::user(), $this->firm))->complete();
     }
 
     /**
@@ -256,6 +266,15 @@ new #[Title('Gösterge Paneli')] class extends Component {
                     @endforeach
                 </div>
             </x-panel.card>
+        @endif
+
+        @if ($this->awaitingApproval)
+            <x-panel.alert variant="info" class="mb-[18px]" title="Kurulum adımları tamamlandı" data-test="setup-awaiting-approval">
+                Sorumlu bordro uzmanının kontrolü ve onayı bekleniyor.
+                @can('approveSetup', $this->firm)
+                    <a href="{{ route('setup.wizard', ['adim' => 5]) }}" wire:navigate class="font-bold underline">Kurulumu onayla</a>
+                @endcan
+            </x-panel.alert>
         @endif
 
         <div class="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

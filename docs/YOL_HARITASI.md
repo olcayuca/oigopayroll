@@ -162,7 +162,18 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
   **Hatırlatıcı** (başlık, zaman, not; hızlı seçim 1 saat sonra / yarın / Pazartesi; zamanı gelince bildirim ziline düşer —
   zamanlayıcı her dakika ve zil yoklamasında teslim eder, her hatırlatma bir kez), **Hesap makinesi** (tarayıcıda; Türkçe sayı
   biçimi, yüzde, klavye, son 4 işlem, sonucu kopyala). API anahtarı yokken asistan yalnızca kısayollarla görünür
-- ⬜ Personel: işten çıkış, Excel'e dışa aktarma, çöp kutusundan geri alma, KVKK aydınlatma onayı (çalışan portalıyla)
+- ✅ Personel işten çıkış: çıkış tarihi, SGK işten çıkış kodu, not; kayıt saklanır, "Çıkışı geri al" ile iptal
+- ✅ Personel Excel çıktısı: kurulum dosyası sütunlarıyla (TCKN / IBAN / hesap no hariç), düzeltilip yeniden yüklenebilir;
+  admin genel raporlarında personel yok
+- ✅ Çöp kutusunda personel: geri alma (işyeri / şirket geri alındıktan sonra), admin kalıcı silme;
+  personeli olan işyeri / şirket silinemez
+- ✅ Tanımlar için Excel aktarımı: tüm türler tek sayfada, tür + kod (yoksa ad) ile güncelleme, eksik üst tanım oluşturulur
+- ✅ SGK meslek kodu, Admin → Bordro Kodları'na meslek listesi yüklendiyse listeye göre doğrulanır.
+  Meslek kodları ve bankalar listesi resmi kaynaktan (İŞKUR meslek listesi / E-Bildirge, TCMB) Excel ile yüklenmeli — henüz boş
+- ✅ Kurulum onayı: tüm adımlar tamamlanınca sorumlu bordro uzmanı sihirbazın özet adımında onaylar; firma kullanıcılarına bildirim,
+  gösterge panelinde "onay bekleniyor", onaydan sonra işyeri / şirket / personel formlarında uyarı; onay kaldırılabilir
+- ⬜ Gerçek müşteri verisiyle deneme aktarımı (eldeki KURULUM DOSYASI boş şablon)
+- ⬜ KVKK aydınlatma onayı (çalışan portalıyla)
 - ❓ Üst çubuktaki bağlam seçici: prototip firma içinde **şirket** seçtiriyor; şimdilik **firma** seçici + şirket kısayolları
 
 ### 3.1 Şirketler (Word: 3. Aşama)

@@ -1,13 +1,14 @@
 <?php
 
-use App\Enums\DefinitionType;
+use App\Actions\Firms\ApproveSetup;
 use App\Livewire\PanelComponent;
 use App\Models\Company;
-use App\Models\Definition;
-use App\Models\Employee;
 use App\Models\Workplace;
+use App\Support\SetupStatus;
+use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -28,13 +29,19 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
         $this->step = max(1, min(5, $this->step));
     }
 
+    #[Computed]
+    public function setup(): SetupStatus
+    {
+        return new SetupStatus(Auth::user(), $this->firm);
+    }
+
     /**
      * @return Collection<int, Company>
      */
     #[Computed]
     public function companies(): Collection
     {
-        return Company::visibleTo(Auth::user())->where('firm_id', $this->firm->id)->withCount('workplaces')->orderBy('company_no')->get();
+        return $this->setup->companies();
     }
 
     /**
@@ -43,7 +50,7 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
     #[Computed]
     public function workplaces(): Collection
     {
-        return Workplace::visibleTo(Auth::user())->whereIn('company_id', $this->companies->pluck('id'))->with('company:id,short_name')->get();
+        return $this->setup->workplaces();
     }
 
     /**
@@ -52,8 +59,7 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
     #[Computed]
     public function definitionCounts(): array
     {
-        return Definition::query()->where('firm_id', $this->firm->id)->where('is_active', true)
-            ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type')->map(fn ($total) => (int) $total)->all();
+        return $this->setup->definitionCounts();
     }
 
     /**
@@ -62,13 +68,7 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
     #[Computed]
     public function personnel(): array
     {
-        $query = fn () => Employee::viewableBy(Auth::user(), $this->firm);
-
-        return [
-            'total' => $query()->count(),
-            'active' => $query()->where('status', Employee::ACTIVE)->count(),
-            'incomplete' => $query()->incomplete()->count(),
-        ];
+        return $this->setup->personnel();
     }
 
     /**
@@ -79,22 +79,30 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
     #[Computed]
     public function status(): array
     {
-        $withoutWorkplace = $this->companies->where('workplaces_count', 0)->count();
-        $incompleteWorkplaces = $this->workplaces->filter(fn (Workplace $workplace) => $workplace->setupPercent() < 100)->count();
-        $required = [DefinitionType::UpperUnit, DefinitionType::Title, DefinitionType::Position];
-        $missingDefinitions = array_filter($required, fn (DefinitionType $type) => ($this->definitionCounts[$type->value] ?? 0) === 0);
+        return $this->setup->steps();
+    }
 
-        $status = [
-            1 => [$this->companies->isNotEmpty(), $this->companies->count().' şirket'],
-            2 => [$this->workplaces->isNotEmpty() && $withoutWorkplace === 0 && $incompleteWorkplaces === 0,
-                $this->workplaces->count().' işyeri'.($incompleteWorkplaces ? ' · '.$incompleteWorkplaces.' eksik' : '')],
-            3 => [$missingDefinitions === [], array_sum($this->definitionCounts).' tanım'],
-            4 => [$this->personnel['active'] > 0 && $this->personnel['incomplete'] === 0,
-                $this->personnel['active'].' personel'.($this->personnel['incomplete'] ? ' · '.$this->personnel['incomplete'].' eksik' : '')],
-        ];
-        $status[5] = [collect($status)->every(fn ($item) => $item[0]), collect($status)->filter(fn ($item) => $item[0])->count().' / 4 adım'];
+    public function approve(ApproveSetup $approveSetup): void
+    {
+        $this->authorize('approveSetup', $this->firm);
 
-        return $status;
+        try {
+            $approveSetup->approve($this->firm, Auth::user(), $this->setup);
+        } catch (ValidationException $e) {
+            Flux::toast(variant: 'danger', text: collect($e->errors())->flatten()->first());
+
+            return;
+        }
+
+        Flux::toast(variant: 'success', text: 'Kurulum onaylandı; firma kullanıcılarına bildirildi.');
+    }
+
+    public function revokeApproval(ApproveSetup $approveSetup): void
+    {
+        $this->authorize('approveSetup', $this->firm);
+        $approveSetup->revoke($this->firm);
+
+        Flux::toast(variant: 'success', text: 'Kurulum onayı kaldırıldı.');
     }
 
     public function go(int $step): void
@@ -227,9 +235,30 @@ new #[Title('Kurulum Sihirbazı')] class extends PanelComponent {
                 <h2 class="text-[17px] font-extrabold text-ink">Özet</h2>
                 <p class="mt-1 mb-5 text-[13px] text-muted">Tüm adımlar tamamlandığında firma bordro dönemine hazırdır.</p>
 
-                @if ($status[5][0])
-                    <x-panel.alert variant="success" title="Kurulum tamamlandı">Şirket, işyeri, tanım ve personel bilgileri eksiksiz. Bordro modülü açıldığında ilk dönem bu verilerle hesaplanacak.</x-panel.alert>
+                @if ($this->firm->setup_approved_at)
+                    <x-panel.alert variant="success" title="Kurulum onaylandı" data-test="setup-approved">
+                        {{ $this->firm->setup_approved_at->format('d.m.Y H:i') }} · {{ $this->firm->setupApprover?->name ?? '—' }}.
+                        Onaydan sonra SGK sicil, vergi ve personel bilgilerindeki değişiklikler bordroyu etkiler; değişiklikleri bordro uzmanınıza bildirin.
+                    </x-panel.alert>
+                @elseif ($status[5][0])
+                    <x-panel.alert variant="success" title="Kurulum tamamlandı">
+                        Şirket, işyeri, tanım ve personel bilgileri eksiksiz. Son adım: sorumlu bordro uzmanının kontrolü ve onayı.
+                    </x-panel.alert>
                 @endif
+
+                @can('approveSetup', $this->firm)
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-[#F7F9FC] px-4 py-3">
+                        <div class="text-[13px] text-ink-2">
+                            <span class="font-bold text-ink">Bordro uzmanı onayı.</span>
+                            {{ $this->firm->setup_approved_at ? 'Kurulum onaylı.' : ($status[5][0] ? 'Bilgileri kontrol ettiyseniz kurulumu onaylayın.' : 'Tüm adımlar tamamlanınca onaylanabilir.') }}
+                        </div>
+                        @if ($this->firm->setup_approved_at)
+                            <flux:button size="sm" icon="x-mark" wire:click="revokeApproval" wire:confirm="Kurulum onayı kaldırılsın mı?">Onayı kaldır</flux:button>
+                        @else
+                            <flux:button size="sm" variant="primary" icon="check-badge" wire:click="approve" :disabled="! $status[5][0]" data-test="approve-setup">Kurulumu onayla</flux:button>
+                        @endif
+                    </div>
+                @endcan
 
                 <div class="mt-4 divide-y divide-line-4 rounded-xl border border-line">
                     @foreach (array_slice($this::STEPS, 0, 4, true) as $number => $label)

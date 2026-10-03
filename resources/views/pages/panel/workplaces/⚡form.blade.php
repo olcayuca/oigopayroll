@@ -338,6 +338,8 @@ new #[Title('İşyeri')] class extends PanelComponent {
         </x-slot:actions>
     </x-panel.page-header>
 
+    <x-panel.setup-approved-notice :firm="$this->firm" />
+
     @error('firm')
         <x-panel.alert variant="danger" :title="$message" class="mb-4" />
     @enderror

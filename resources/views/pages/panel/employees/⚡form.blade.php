@@ -326,6 +326,8 @@ new #[Title('Personel')] class extends PanelComponent {
         </x-slot:actions>
     </x-panel.page-header>
 
+    <x-panel.setup-approved-notice :firm="$this->firm" />
+
     @if ($this->invalidTabs() !== [])
         <x-panel.alert variant="danger" class="mb-4" title="Formda düzeltilmesi gereken alanlar var.">
             Kırmızı işaretli sekmelerdeki alanları kontrol edin.

@@ -169,8 +169,10 @@ new #[Title('Excel ile Aktarım')] class extends PanelComponent {
         @if ($this->importType === \App\Enums\ImportType::Employee || $this->importType === \App\Enums\ImportType::Workplace)
             Müşterinin <strong>KURULUM DOSYASI</strong> olduğu gibi yüklenebilir; dosyada birden fazla sayfa varsa ilgili sayfa ({{ $this->importType === \App\Enums\ImportType::Employee ? 'Personel Bilgileri' : 'Firma Bilgileri' }}) otomatik seçilir.
         @endif
-        {{ ucfirst($this->matchText()) }} eşleşen satırlar güncellenir, diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir;
-        şifreli alanların (şifreler{{ $this->importType === \App\Enums\ImportType::Employee ? ', TCKN, IBAN, hesap no' : '' }}) sütunları boş veya yoksa mevcut değerler korunur.
+        {{ ucfirst($this->matchText()) }} eşleşen satırlar güncellenir, diğerleri yeni kayıt olur. Yalnızca dosyadaki sütunlar değişir.
+        @unless ($this->importType === \App\Enums\ImportType::Definition)
+            Şifreli alanların (şifreler{{ $this->importType === \App\Enums\ImportType::Employee ? ', TCKN, IBAN, hesap no' : '' }}) sütunları boş veya yoksa mevcut değerler korunur.
+        @endunless
         @if ($this->importType === \App\Enums\ImportType::Definition)
             Tüm tanım türleri tek sayfada yüklenir. Birimin üst birimi, pozisyonun birimi "Üst Tanım" sütununda verilir; listede yoksa onayda oluşturulur.
         @endif

@@ -40,6 +40,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewed_by
  * @property Carbon|null $reviewed_at
  * @property string|null $rejection_reason
+ * @property Carbon|null $setup_approved_at Kurulum onayı (ApproveSetup).
+ * @property int|null $setup_approved_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -50,6 +52,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, FirmDocument> $documents
  * @property-read Collection<int, FirmContract> $contracts
  * @property-read User|null $reviewer
+ * @property-read User|null $setupApprover
  */
 #[Fillable([
     'parent_firm_id', 'name', 'title', 'tax_number', 'tax_office', 'contact_name', 'phone', 'email', 'address',
@@ -159,6 +162,14 @@ class Firm extends Model
     /**
      * @return BelongsTo<User, $this>
      */
+    public function setupApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'setup_approved_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
@@ -208,6 +219,7 @@ class Firm extends Model
             'status' => FirmStatus::class,
             'source' => FirmSource::class,
             'reviewed_at' => 'datetime',
+            'setup_approved_at' => 'datetime',
             'specialist_assigned_at' => 'datetime',
         ];
     }

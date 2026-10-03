@@ -45,6 +45,16 @@ class FirmPolicy
         return $user->hasPermissionOn(Permission::FirmUpdate, $firm);
     }
 
+    /**
+     * Kurulum onayı: HRD staff only — the firm's responsible specialist, or a specialist who may update the firm.
+     * (Super admins pass via Gate::before.)
+     */
+    public function approveSetup(User $user, Firm $firm): bool
+    {
+        return $user->type === UserType::PayrollSpecialist && $firm->isActive()
+            && ($firm->specialist_id === $user->id || $user->hasPermissionOn(Permission::FirmUpdate, $firm));
+    }
+
     public function review(User $user, Firm $firm): bool
     {
         return false;
