@@ -114,7 +114,8 @@ class AuditLog extends Model
 
         $query->where('firm_id', $firm->id)->where(fn (Builder $query) => $query
             ->whereIn('company_id', $reach['companies'])
-            ->orWhereIn('workplace_id', $reach['workplaces']));
+            ->orWhereIn('workplace_id', $reach['workplaces'])
+            ->orWhereIn('workplace_id', Workplace::withTrashed()->whereIn('company_id', $reach['companies'])->select('id')));
     }
 
     /**
@@ -161,7 +162,9 @@ class AuditLog extends Model
                 ->orWhere('properties', 'like', '%'.$q.'%')
                 ->orWhere('ip_address', $q)))
             ->when($user !== '', fn ($query) => $query->where('user_id', (int) $user))
-            ->when($company !== '', fn ($query) => $query->where('company_id', (int) $company))
+            ->when($company !== '', fn ($query) => $query->where(fn ($query) => $query
+                ->where('company_id', (int) $company)
+                ->orWhereIn('workplace_id', Workplace::withTrashed()->where('company_id', (int) $company)->select('id'))))
             ->when($workplace !== '', fn ($query) => $query->where('workplace_id', (int) $workplace))
             ->when($module !== '', fn ($query) => $query->where('event', 'like', $module.'.%'))
             ->when($from !== '', fn ($query) => $query->where('created_at', '>=', Carbon::parse($from)->startOfDay()))

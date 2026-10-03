@@ -55,7 +55,7 @@ class ManageFirmDocuments
             'uploaded_by' => $user?->id,
         ]);
 
-        Audit::log(AuditEvent::DocumentUploaded, "{$firm->name}: belge yüklendi ({$document->type->label()} · {$document->title})", $firm, ['document_id' => $document->id], $user);
+        Audit::log(AuditEvent::DocumentUploaded, "{$firm->name}: belge yüklendi ({$document->type->label()} · {$document->title})", $firm, ['document_id' => $document->id], $user, scope: $document);
 
         return $document;
     }
@@ -89,7 +89,7 @@ class ManageFirmDocuments
         Storage::disk($document->disk)->delete($document->path);
         $document->delete();
 
-        Audit::log(AuditEvent::DocumentDeleted, "{$document->firm->name}: belge silindi ({$document->type->label()} · {$document->title})", $document->firm, ['document_id' => $document->id], $user);
+        Audit::log(AuditEvent::DocumentDeleted, "{$document->firm->name}: belge silindi ({$document->type->label()} · {$document->title})", $document->firm, ['document_id' => $document->id], $user, scope: $document);
     }
 
     /**

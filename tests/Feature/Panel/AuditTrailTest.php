@@ -5,13 +5,16 @@ namespace Tests\Feature\Panel;
 use App\Actions\Access\GrantAccess;
 use App\Actions\Companies\SaveCompany;
 use App\Actions\Employees\SaveEmployee;
+use App\Actions\Firms\ManageFirmDocuments;
 use App\Actions\Workplaces\SaveWorkplace;
 use App\Enums\AuditEvent;
+use App\Enums\DocumentType;
 use App\Enums\Permission;
 use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Employee;
 use App\Models\Firm;
+use App\Models\FirmDocument;
 use App\Models\User;
 use App\Models\Workplace;
 use App\Support\Audit;
@@ -150,6 +153,38 @@ class AuditTrailTest extends TestCase
         $this->actingAs($noAudit);
         $this->get(route('audit.index'))->assertForbidden();
         $this->get(route('audit.export'))->assertForbidden();
+    }
+
+    /**
+     * Firma (company_id) A, but working at a workplace of company B (SGK firma): both companies see the record.
+     */
+    public function test_personnel_of_another_companys_workplace_belongs_to_both_companies(): void
+    {
+        $employee = Employee::factory()->create([
+            'workplace_id' => $this->ankara->id, 'company_id' => $this->company->id, 'firm_id' => $this->firm->id,
+        ]);
+        Audit::log(AuditEvent::EmployeeUpdated, 'Ankara personeli işlemi', $employee);
+
+        Livewire::test('pages::panel.audit.index')
+            ->set('company', (string) $this->otherCompany->id)->assertSee('Ankara personeli işlemi')
+            ->set('company', (string) $this->company->id)->assertSee('Ankara personeli işlemi');
+
+        $lojistikManager = User::factory()->create(['firm_id' => $this->firm->id]);
+        app(GrantAccess::class)->handle($lojistikManager, $this->otherCompany, [Permission::CompanyView, Permission::FirmViewAudit]);
+        $this->actingAs($lojistikManager);
+        $this->get(route('audit.index'))->assertOk()->assertSee('Ankara personeli işlemi');
+    }
+
+    public function test_company_documents_are_placed_under_the_company(): void
+    {
+        $document = FirmDocument::create([
+            'firm_id' => $this->firm->id, 'company_id' => $this->company->id, 'type' => DocumentType::cases()[0],
+            'title' => 'Vergi levhası', 'disk' => 'local', 'path' => 'x.pdf', 'original_name' => 'x.pdf', 'mime_type' => 'application/pdf', 'size' => 1,
+        ]);
+        app(ManageFirmDocuments::class)->delete($document, $this->owner);
+
+        $log = AuditLog::where('event', AuditEvent::DocumentDeleted)->sole();
+        $this->assertSame([$this->firm->id, $this->company->id], [$log->firm_id, $log->company_id]);
     }
 
     public function test_excel_import_rows_are_marked_with_their_file(): void

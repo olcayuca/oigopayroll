@@ -22,7 +22,7 @@ class DownloadFirmDocument extends Controller
         $disk = Storage::disk($document->disk);
         abort_unless($disk->exists($document->path), 404, 'Dosya bulunamadı.');
 
-        Audit::log(AuditEvent::DocumentDownloaded, "{$document->firm->name}: belge indirildi ({$document->title})", $document->firm, ['document_id' => $document->id]);
+        Audit::log(AuditEvent::DocumentDownloaded, "{$document->firm->name}: belge indirildi ({$document->title})", $document->firm, ['document_id' => $document->id], scope: $document);
 
         $extension = pathinfo($document->path, PATHINFO_EXTENSION);
         $name = str($document->title)->slug()->append('.'.$extension)->toString();
