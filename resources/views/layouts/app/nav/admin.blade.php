@@ -19,6 +19,15 @@
         >
             Firmalar
         </flux:sidebar.item>
+        <flux:sidebar.item
+            icon="lifebuoy"
+            :href="route('admin.support.index')"
+            :current="request()->routeIs('admin.support.*')"
+            :badge="\App\Models\SupportTicket::where('status', \App\Enums\TicketStatus::Open)->count() ?: null"
+            wire:navigate
+        >
+            Destek Talepleri
+        </flux:sidebar.item>
         <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
             Kullanıcılar
         </flux:sidebar.item>

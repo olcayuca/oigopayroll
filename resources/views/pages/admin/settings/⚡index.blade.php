@@ -33,6 +33,7 @@ new #[Title('Sistem Ayarları')] class extends Component {
         'contact.phone' => ['Telefon', ['nullable', 'string', 'max:30']],
         'contact.email' => ['E-posta', ['nullable', 'email', 'max:255']],
         'contact.address' => ['Adres', ['nullable', 'string', 'max:500']],
+        'support.email' => ['Destek e-posta adresi (yeni talepler bu adrese de gönderilir)', ['nullable', 'email', 'max:255']],
     ];
 
     #[Url(as: 'sekme', except: 'genel')]

@@ -55,6 +55,14 @@ class FirmPolicy
             && ($firm->specialist_id === $user->id || $user->hasPermissionOn(Permission::FirmUpdate, $firm));
     }
 
+    /**
+     * Destek: every ticket of the firm (not only one's own) — HRD staff and firm-level managers.
+     */
+    public function viewAllSupportTickets(User $user, Firm $firm): bool
+    {
+        return SupportTicketPolicy::isStaff($user, $firm) || $user->hasPermissionOn(Permission::FirmUpdate, $firm);
+    }
+
     public function review(User $user, Firm $firm): bool
     {
         return false;

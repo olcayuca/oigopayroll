@@ -188,6 +188,17 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Şifre alanları maskeli, yetkiyle görüntüleme (loglu)
 - ✅ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
 
+### 3.2.1 Destek (panel → Yönetim → Destek, admin → Destek Talepleri)
+- ✅ Firma kullanıcısı talep açar: konu, kategori, modül, öncelik, açıklama, ek dosya (PDF / görsel / Excel, en fazla 10 MB)
+- ✅ Yeni talep: HRD süper adminlerine ve firmanın sorumlu bordro uzmanına bildirim + e-posta; Sistem Ayarları'ndaki
+  destek e-posta adresine de e-posta; açan kişiye "talebiniz alındı"
+- ✅ Karşılıklı yazışma: HRD admin portaldan (sorumlu uzman panelden) yanıtlar → müşteriye bildirim + e-posta, durum "Yanıt bekleniyor";
+  müşteri yanıtlar → talep yeniden "Açık", ilgilenen uzmana bildirim + e-posta
+- ✅ Durumlar: Açık, İnceleniyor, Yanıt bekleniyor, Çözüldü, Kapalı; HRD durum ve ilgilenen kişiyi değiştirir, açan kişi kapatabilir
+- ✅ Görünürlük: kullanıcı kendi taleplerini, firma yöneticisi ve HRD firmanın tüm taleplerini görür; admin menüsünde bekleyen sayısı
+- ⬜ E-posta gönderimi için canlıda SMTP (MAIL_MAILER) ayarlanmalı; ayarlanana kadar yalnızca sistem içi bildirim
+- ⬜ E-postaya yanıt vererek talebe mesaj ekleme (gelen e-posta işleme) — ileride
+
 ### 3.3 Firma kullanıcıları (Word: 1. Aşama – Müşteri Firma Kullanıcısı)
 - ✅ Müşteri, kendi firmasına kullanıcı ekler ve firma / şirket / işyeri düzeyinde yetkilendirir (yalnızca sahip olduğu yetkileri verebilir; kendi ve HRD yetkilerine dokunamaz)
 

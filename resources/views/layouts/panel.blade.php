@@ -38,6 +38,8 @@
             $canManageUsers ? ['label' => 'Firma Erişimleri', 'route' => 'firm-access.index', 'active' => request()->routeIs('firm-access.*')] : null,
             $firm && $user->can('viewAudit', $firm) ? ['label' => 'İşlem Geçmişi', 'route' => 'audit.index', 'active' => request()->routeIs('audit.*')] : null,
             ['label' => 'Bildirimler', 'route' => 'notifications.index', 'active' => request()->routeIs('notifications.*')],
+            ['label' => 'Destek', 'route' => $firm ? 'support.index' : null, 'active' => request()->routeIs('support.*'),
+                'count' => $firm ? (\App\Models\SupportTicket::query()->visibleInPanel($user, $firm)->where('status', \App\Enums\TicketStatus::AwaitingCustomer)->count() ?: null) : null],
             ['label' => 'Çöp Kutusu', 'route' => 'trash.index', 'active' => request()->routeIs('trash.*')],
             ['label' => 'Ayarlar', 'route' => 'profile.edit', 'active' => request()->routeIs('profile.*', 'security.*', 'kvkk.edit', 'appearance.*')],
         ])),

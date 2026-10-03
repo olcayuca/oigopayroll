@@ -6,6 +6,7 @@ use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
 use App\Http\Controllers\DownloadReport;
+use App\Http\Controllers\DownloadSupportAttachment;
 use App\Http\Controllers\ExportAuditLog;
 use App\Http\Controllers\ExportFirmRecords;
 use App\Http\Controllers\ImpersonationController;
@@ -30,6 +31,8 @@ Route::domain(config('portals.admin'))
         Route::livewire('/', 'pages::admin.dashboard')->name('dashboard');
 
         Route::livewire('firmalar', 'pages::admin.firms.index')->name('firms.index');
+        Route::livewire('destek-talepleri', 'pages::admin.support.index')->name('support.index');
+        Route::livewire('destek-talepleri/{ticket}', 'pages::support.show')->name('support.show');
         Route::livewire('firmalar/excel', 'pages::admin.firms.import')->name('firms.import');
         Route::get('firmalar/excel/sablon', DownloadFirmTemplate::class)->name('firms.template');
         Route::livewire('firmalar/{firm}', 'pages::admin.firms.show')->name('firms.show');
@@ -94,11 +97,17 @@ Route::domain(config('portals.panel'))
         Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri', 'personel'])->name('exports.download');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
+
+        Route::livewire('destek-talepleri', 'pages::panel.support.index')->name('support.index');
+        Route::livewire('destek-talepleri/{ticket}', 'pages::support.show')->name('support.show');
         Route::livewire('firma-erisimleri', 'pages::panel.firm-access.index')->name('firm-access.index');
 
         Route::livewire('aktarim/{type}', 'pages::panel.imports.upload')->name('imports.create');
         Route::get('aktarim/{type}/sablon', DownloadImportTemplate::class)->name('imports.template');
     });
+
+// Both panels: support attachment download (SupportTicketPolicy::view).
+Route::get('destek-ekleri/{message}', DownloadSupportAttachment::class)->middleware(['auth', 'verified'])->name('support.attachment');
 
 // Both panels: firm document download (FirmPolicy::viewDocuments, audited).
 Route::get('belgeler/{document}/indir', DownloadFirmDocument::class)->middleware(['auth', 'verified'])->name('documents.download');
