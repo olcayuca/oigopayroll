@@ -65,6 +65,8 @@ enum AuditEvent: string
     case EmployeeUpdated = 'employee.updated';
     case EmployeeDeleted = 'employee.deleted';
     case EmployeeRestored = 'employee.restored';
+    case EmployeeTerminated = 'employee.terminated';
+    case EmployeeReinstated = 'employee.reinstated';
     case DefinitionChanged = 'definition.changed';
     case RecordPurged = 'system.record_purged';
     case DataExported = 'system.data_exported';
@@ -141,6 +143,8 @@ enum AuditEvent: string
             self::EmployeeUpdated => 'Personel güncellendi',
             self::EmployeeDeleted => 'Personel silindi',
             self::EmployeeRestored => 'Personel geri alındı',
+            self::EmployeeTerminated => 'İşten çıkış',
+            self::EmployeeReinstated => 'İşten çıkış geri alındı',
             self::DefinitionChanged => 'Tanım değiştirildi',
             self::RecordPurged => 'Kayıt kalıcı olarak silindi',
             self::DataExported => 'Excel dışa aktarma',

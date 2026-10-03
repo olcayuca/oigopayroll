@@ -1,14 +1,18 @@
 <?php
 
 use App\Actions\Employees\SaveEmployee;
+use App\Actions\Employees\TerminateEmployee;
+use App\Enums\CodeList;
 use App\Enums\AuditEvent;
 use App\Livewire\PanelComponent;
 use App\Models\Employee;
+use App\Models\PayrollCode;
 use App\Support\Audit;
 use App\Support\EmployeeOptions;
 use App\Validation\EmployeeRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 
@@ -24,6 +28,12 @@ new #[Title('Personel')] class extends PanelComponent {
      * @var array<string, string>
      */
     public array $revealed = [];
+
+    public string $terminationDate = '';
+
+    public string $terminationCode = '';
+
+    public string $terminationNote = '';
 
     public function mount(Employee $employee): void
     {
@@ -64,6 +74,56 @@ new #[Title('Personel')] class extends PanelComponent {
 
         Flux::toast(variant: 'success', text: 'Personel silindi.');
         $this->redirectRoute('employees.index', navigate: true);
+    }
+
+    /**
+     * SGK işten ayrılış kodları: code => name.
+     *
+     * @return array<string, string>
+     */
+    #[Computed]
+    public function terminationReasons(): array
+    {
+        return PayrollCode::options(CodeList::TerminationReasons)->get()
+            ->sortBy(fn (PayrollCode $code) => (int) $code->code)
+            ->mapWithKeys(fn (PayrollCode $code) => [$code->code => $code->name])->all();
+    }
+
+    public function openTermination(): void
+    {
+        $this->authorize('update', $this->employee);
+        $this->terminationDate = now()->toDateString();
+        $this->reset('terminationCode', 'terminationNote');
+        $this->resetValidation();
+
+        Flux::modal('termination')->show();
+    }
+
+    public function terminate(TerminateEmployee $terminate): void
+    {
+        $this->authorize('update', $this->employee);
+        $this->resetValidation();
+
+        try {
+            $terminate->terminate($this->employee, [
+                'termination_date' => $this->terminationDate, 'termination_code' => $this->terminationCode, 'termination_note' => $this->terminationNote,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->setErrorBag(collect($e->errors())->mapWithKeys(fn ($messages, $field) => [str($field)->camel()->toString() => $messages])->all());
+
+            return;
+        }
+
+        Flux::modal('termination')->close();
+        Flux::toast(variant: 'success', text: 'İşten çıkış kaydedildi. SGK işten ayrılış bildirgesini 10 gün içinde verin.');
+    }
+
+    public function cancelTermination(TerminateEmployee $terminate): void
+    {
+        $this->authorize('update', $this->employee);
+        $terminate->cancel($this->employee);
+
+        Flux::toast(variant: 'success', text: 'İşten çıkış geri alındı; personel yeniden aktif.');
     }
 
     /**
@@ -170,10 +230,27 @@ new #[Title('Personel')] class extends PanelComponent {
                 <flux:button icon="trash" wire:click="delete" wire:confirm="Personel kaydı silinsin mi?" class="!text-st-red">Sil</flux:button>
             @endcan
             @can('update', $employee)
+                @if ($employee->status === \App\Models\Employee::LEFT)
+                    <flux:button icon="arrow-uturn-left" wire:click="cancelTermination" wire:confirm="İşten çıkış geri alınsın ve personel yeniden aktif olsun mu?">Çıkışı geri al</flux:button>
+                @else
+                    <flux:button icon="arrow-right-start-on-rectangle" wire:click="openTermination" data-test="open-termination">İşten Çıkış</flux:button>
+                @endif
                 <flux:button variant="primary" icon="pencil-square" :href="route('employees.edit', [$employee, 'sekme' => $tab])" wire:navigate>Düzenle</flux:button>
             @endcan
         </x-slot:actions>
     </x-panel.page-header>
+
+    @if ($employee->status === \App\Models\Employee::LEFT)
+        <x-panel.alert variant="danger" class="mb-5" title="İşten ayrıldı" data-test="termination-info">
+            Çıkış tarihi {{ $employee->termination_date?->format('d.m.Y') ?? '—' }}
+            @if ($employee->termination_code)
+                · Kod {{ $employee->termination_code }}: {{ $this->terminationReasons[$employee->termination_code] ?? '' }}
+            @endif
+            @if ($employee->termination_note)
+                <div class="mt-1 whitespace-pre-line">{{ $employee->termination_note }}</div>
+            @endif
+        </x-panel.alert>
+    @endif
 
     <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
         <div class="min-w-0 rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(16,40,72,0.04)]">
@@ -240,4 +317,27 @@ new #[Title('Personel')] class extends PanelComponent {
             <x-panel.record-meta :record="$employee" />
         </div>
     </div>
+
+    @can('update', $employee)
+        <flux:modal name="termination" class="w-full md:w-[32rem]">
+            <form wire:submit="terminate" class="space-y-5">
+                <div>
+                    <flux:heading size="lg">İşten Çıkış</flux:heading>
+                    <flux:text class="mt-1">{{ $employee->fullName() }} · Sicil {{ $employee->registry_no }} · işe giriş {{ $employee->hire_date->format('d.m.Y') }}</flux:text>
+                </div>
+                <flux:input type="date" wire:model="terminationDate" label="Çıkış tarihi (son çalışma günü)" required />
+                <flux:select wire:model="terminationCode" label="SGK işten çıkış kodu" placeholder="Seçin…" required>
+                    @foreach ($this->terminationReasons as $code => $name)
+                        <flux:select.option value="{{ $code }}">{{ $code }} · {{ $name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:textarea wire:model="terminationNote" label="Not" rows="2" />
+                <x-panel.alert variant="warning">SGK işten ayrılış bildirgesi çıkış tarihinden itibaren 10 gün içinde verilmelidir. Kayıt silinmez; bordro geçmişi için saklanır.</x-panel.alert>
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close><flux:button variant="filled">Vazgeç</flux:button></flux:modal.close>
+                    <flux:button type="submit" variant="danger">İşten çıkışı kaydet</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    @endcan
 </div>

@@ -22,6 +22,9 @@ use Illuminate\Support\Carbon;
  * @property int $company_id
  * @property int $workplace_id
  * @property string $status
+ * @property Carbon|null $termination_date
+ * @property string|null $termination_code
+ * @property string|null $termination_note
  * @property string $registry_no
  * @property string $tckn
  * @property string $first_name
@@ -34,7 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable([
-    'firm_id', 'company_id', 'workplace_id', 'status',
+    'firm_id', 'company_id', 'workplace_id', 'status', 'termination_date', 'termination_code', 'termination_note',
     'registry_no', 'tckn', 'tckn_hash', 'first_name', 'last_name', 'second_last_name', 'work_email', 'personal_email',
     'mobile_phone', 'work_phone', 'address', 'province', 'district',
     'birth_date', 'gender', 'marital_status', 'education', 'graduation_field', 'military_status',
@@ -298,6 +301,7 @@ class Employee extends Model
             'seniority_date' => 'date',
             'leave_base_date' => 'date',
             'disability_end_date' => 'date',
+            'termination_date' => 'date',
             'wage' => 'decimal:2',
             'bes_rate' => 'decimal:2',
             'cumulative_tax_base' => 'decimal:2',

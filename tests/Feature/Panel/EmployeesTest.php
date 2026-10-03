@@ -4,12 +4,14 @@ namespace Tests\Feature\Panel;
 
 use App\Actions\Access\GrantAccess;
 use App\Actions\Employees\SaveEmployee;
+use App\Enums\AuditEvent;
 use App\Enums\CodeList;
 use App\Enums\DefinitionType;
 use App\Enums\ImportType;
 use App\Enums\Permission;
 use App\Enums\ScopeType;
 use App\Imports\ImportService;
+use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Definition;
 use App\Models\Employee;
@@ -198,6 +200,40 @@ class EmployeesTest extends TestCase
         $this->assertSame([1, 0], [$import->total_rows, $import->error_rows], json_encode($import->rows->pluck('errors'), JSON_UNESCAPED_UNICODE));
         $this->assertNotSame('create', $import->rows->first()?->action);
         $this->assertSame($employee->id, Employee::where('registry_no', '1001')->sole()->id);
+    }
+
+    public function test_termination_records_exit_date_and_sgk_code_and_can_be_undone(): void
+    {
+        $employee = app(SaveEmployee::class)->create($this->firm, $this->input(), $this->owner);
+
+        Livewire::test('pages::panel.employees.show', ['employee' => $employee])
+            ->call('openTermination')
+            ->set('terminationDate', '2022-01-15')
+            ->set('terminationCode', '99')
+            ->call('terminate')
+            ->assertHasErrors(['terminationDate', 'terminationCode'])
+            ->set('terminationDate', '2026-09-30')
+            ->set('terminationCode', '4')
+            ->set('terminationNote', 'Proje bitti')
+            ->call('terminate')
+            ->assertHasNoErrors()
+            ->assertSee('İşten ayrıldı')
+            ->assertSee('30.09.2026')
+            ->assertSee('Çıkışı geri al');
+
+        $employee->refresh();
+        $this->assertSame([Employee::LEFT, '2026-09-30', '4'], [$employee->status, $employee->termination_date?->toDateString(), $employee->termination_code]);
+        $this->assertSame(1, AuditLog::where('event', AuditEvent::EmployeeTerminated)->count());
+
+        Livewire::test('pages::panel.employees.show', ['employee' => $employee])->call('cancelTermination')->assertDontSee('data-test="termination-info"', false);
+        $employee->refresh();
+        $this->assertSame([Employee::ACTIVE, null], [$employee->status, $employee->termination_date]);
+
+        // A viewer without update permission cannot terminate.
+        $viewer = User::factory()->create();
+        app(GrantAccess::class)->handle($viewer, $this->workplace, [Permission::WorkplaceView, Permission::EmployeeView]);
+        $this->actingAs($viewer);
+        Livewire::test('pages::panel.employees.show', ['employee' => $employee])->assertDontSee('İşten Çıkış')->call('openTermination')->assertForbidden();
     }
 
     public function test_update_keeps_encrypted_fields_when_left_blank(): void
