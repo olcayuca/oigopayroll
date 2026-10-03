@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\FirmStatus;
 use App\Enums\Permission;
 use App\Enums\UserType;
+use App\Models\AuditLog;
 use App\Models\Firm;
 use App\Models\User;
 
@@ -75,6 +76,16 @@ class FirmPolicy
     public function manageDefinitions(User $user, Firm $firm): bool
     {
         return $firm->isActive() && $user->hasPermissionOn(Permission::FirmUpdate, $firm);
+    }
+
+    /**
+     * İşlem Geçmişi: firm.view_audit on the firm, or on some of its companies / workplaces.
+     */
+    public function viewAudit(User $user, Firm $firm): bool
+    {
+        $reach = AuditLog::reach($user, $firm);
+
+        return $reach['firm'] || $reach['companies'] !== [] || $reach['workplaces'] !== [];
     }
 
     public function delete(User $user, Firm $firm): bool

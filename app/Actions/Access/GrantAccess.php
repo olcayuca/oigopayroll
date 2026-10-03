@@ -56,7 +56,7 @@ class GrantAccess
             'scope_type' => $grant->scope_type->value,
             'scope_id' => $grant->scope_id,
             'permissions' => $grant->effectivePermissions(),
-        ]);
+        ], scope: $scope);
 
         return $grant;
     }
@@ -75,7 +75,7 @@ class GrantAccess
         Audit::log(AuditEvent::AccessRevoked, "{$user->name} kullanıcısının yetkisi kaldırıldı", $user, [
             'scope_type' => self::scopeType($scope)->value,
             'scope_id' => $scope->getKey(),
-        ]);
+        ], scope: $scope);
 
         $user->flushAccessCache();
     }

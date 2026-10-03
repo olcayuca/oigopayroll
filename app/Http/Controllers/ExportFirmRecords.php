@@ -31,6 +31,6 @@ class ExportFirmRecords extends Controller
             default => abort(404),
         };
 
-        return $export->download($exportType, $query, withFirm: false, scope: $firm->name);
+        return $export->download($exportType, $query, withFirm: false, scope: $firm->name, scopeModel: $firm);
     }
 }

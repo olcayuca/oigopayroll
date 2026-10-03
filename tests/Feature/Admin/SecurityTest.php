@@ -201,7 +201,10 @@ class SecurityTest extends TestCase
 
         $this->assertSame(1, AuditLog::where('event', AuditEvent::CredentialRevealed)->count());
         $update = AuditLog::where('event', AuditEvent::WorkplaceUpdated)->sole();
-        $this->assertContains('sgk_system_password', $update->properties['fields']);
+        $change = collect($update->changes())->firstWhere('field', 'sgk_system_password');
+        $this->assertSame('•••••• (değiştirildi)', $change['new'] ?? null, 'The change is listed, the value is masked.');
+        $this->assertSame($workplace->company_id, $update->company_id, 'Workplace logs carry their company.');
+        $this->assertSame($workplace->id, $update->workplace_id);
         $this->assertStringNotContainsString('YENI-GIZLI-SIFRE', (string) DB::table('audit_logs')->pluck('properties')->implode(' '));
         $this->assertStringNotContainsString('YENI-GIZLI-SIFRE', (string) DB::table('audit_logs')->pluck('description')->implode(' '));
     }

@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Firm;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\AuditChanges;
 use App\Validation\CompanyRules;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -30,7 +31,9 @@ class SaveCompany
         $data = $this->validate($input);
 
         $company = $firm->companies()->create([...$data, 'created_by' => $user?->id]);
-        Audit::log(AuditEvent::CompanyCreated, "Şirket oluşturuldu: {$company->company_no} {$company->title}", $company);
+        Audit::log(AuditEvent::CompanyCreated, "Şirket oluşturuldu: {$company->company_no} {$company->title}", $company, [
+            'changes' => AuditChanges::created($company, ['company_no', 'title', 'short_name', 'company_type', 'sector_id', 'tax_number', 'tax_office'], CompanyRules::attributes()),
+        ]);
 
         return $company;
     }
@@ -40,10 +43,13 @@ class SaveCompany
      */
     public function update(Company $company, array $input): Company
     {
+        $before = AuditChanges::snapshot($company);
         $company->update($this->validate($input, $company));
 
         if ($company->wasChanged()) {
-            Audit::log(AuditEvent::CompanyUpdated, "Şirket güncellendi: {$company->company_no} {$company->title}", $company, ['fields' => array_keys($company->getChanges())]);
+            Audit::log(AuditEvent::CompanyUpdated, "Şirket güncellendi: {$company->company_no} {$company->title}", $company, [
+                'changes' => AuditChanges::between($company, $before, CompanyRules::attributes()),
+            ]);
         }
 
         return $company;

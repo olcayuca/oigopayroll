@@ -6,6 +6,7 @@ use App\Enums\AuditEvent;
 use App\Enums\FirmStatus;
 use App\Models\Firm;
 use App\Support\Audit;
+use App\Support\AuditChanges;
 use App\Validation\FirmRules;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -20,10 +21,13 @@ class UpdateFirm
      */
     public function update(Firm $firm, array $input): Firm
     {
+        $before = AuditChanges::snapshot($firm);
         $firm->update(Validator::make(FirmRules::clean($input), FirmRules::rules($firm), [], FirmRules::attributes())->validate());
 
         if ($firm->wasChanged()) {
-            Audit::log(AuditEvent::FirmUpdated, "Firma bilgileri güncellendi: {$firm->name}", $firm, ['fields' => array_keys($firm->getChanges())]);
+            Audit::log(AuditEvent::FirmUpdated, "Firma bilgileri güncellendi: {$firm->name}", $firm, [
+                'changes' => AuditChanges::between($firm, $before, FirmRules::attributes()),
+            ]);
         }
 
         return $firm;

@@ -66,6 +66,7 @@ new #[Title('Şirket')] class extends PanelComponent {
             <x-panel.badge color="navy">{{ $company->company_type->label() }}</x-panel.badge>
         </x-slot:badge>
         <x-slot:actions>
+            <x-panel.history-link :filter="['sirket' => $company->id]" />
             @can('delete', $company)
                 <flux:button icon="trash" wire:click="delete" wire:confirm="Şirket silinsin mi?" class="!text-st-red">Sil</flux:button>
             @endcan

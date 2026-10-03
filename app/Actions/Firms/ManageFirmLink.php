@@ -122,7 +122,7 @@ class ManageFirmLink
         $grant->delete();
         $grant->user->flushAccessCache();
 
-        Audit::log(AuditEvent::AccessRevoked, "{$grant->user->name} kullanıcısının {$link->managed->name} ataması kaldırıldı", $grant->user);
+        Audit::log(AuditEvent::AccessRevoked, "{$grant->user->name} kullanıcısının {$link->managed->name} ataması kaldırıldı", $grant->user, scope: $link->managed);
     }
 
     /**

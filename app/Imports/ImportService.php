@@ -121,34 +121,36 @@ class ImportService
         $counts = [DataImportRow::CREATE => 0, DataImportRow::UPDATE => 0];
 
         try {
-            DB::transaction(function () use ($import, $user, &$failures, &$counts) {
-                $firm = $import->type === ImportType::Firm ? null : $import->firm()->lockForUpdate()->firstOrFail();
+            Audit::within(['source' => 'excel', 'import_id' => $import->id, 'import_file' => $import->original_filename], function () use ($import, $user, &$failures, &$counts) {
+                DB::transaction(function () use ($import, $user, &$failures, &$counts) {
+                    $firm = $import->type === ImportType::Firm ? null : $import->firm()->lockForUpdate()->firstOrFail();
 
-                foreach ($import->rows as $row) {
-                    try {
-                        $record = $this->apply($import, $firm, $row, $user);
+                    foreach ($import->rows as $row) {
+                        try {
+                            $record = $this->apply($import, $firm, $row, $user);
 
-                        if ($record !== null) {
-                            $row->createdRecord()->associate($record)->save();
-                            $counts[$row->action === DataImportRow::UPDATE ? DataImportRow::UPDATE : DataImportRow::CREATE]++;
+                            if ($record !== null) {
+                                $row->createdRecord()->associate($record)->save();
+                                $counts[$row->action === DataImportRow::UPDATE ? DataImportRow::UPDATE : DataImportRow::CREATE]++;
+                            }
+                        } catch (ValidationException $e) {
+                            /** @var array<string, list<string>> $messages */
+                            $messages = $e->errors();
+                            $failures[$row->id] = $messages;
                         }
-                    } catch (ValidationException $e) {
-                        /** @var array<string, list<string>> $messages */
-                        $messages = $e->errors();
-                        $failures[$row->id] = $messages;
                     }
-                }
 
-                if ($failures !== []) {
-                    throw new RuntimeException('import-failed');
-                }
+                    if ($failures !== []) {
+                        throw new RuntimeException('import-failed');
+                    }
 
-                $import->update([
-                    'status' => ImportStatus::Completed,
-                    'completed_at' => now(),
-                    'created_rows' => $counts[DataImportRow::CREATE],
-                    'updated_rows' => $counts[DataImportRow::UPDATE],
-                ]);
+                    $import->update([
+                        'status' => ImportStatus::Completed,
+                        'completed_at' => now(),
+                        'created_rows' => $counts[DataImportRow::CREATE],
+                        'updated_rows' => $counts[DataImportRow::UPDATE],
+                    ]);
+                });
             });
         } catch (RuntimeException $e) {
             if ($e->getMessage() !== 'import-failed') {

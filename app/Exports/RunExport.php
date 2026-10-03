@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Enums\AuditEvent;
 use App\Support\Audit;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -17,14 +18,14 @@ class RunExport
     /**
      * @param  Builder<covariant \Illuminate\Database\Eloquent\Model>  $query
      */
-    public function download(ExportType $type, Builder $query, bool $withFirm = true, ?string $scope = null): BinaryFileResponse
+    public function download(ExportType $type, Builder $query, bool $withFirm = true, ?string $scope = null, ?Model $scopeModel = null): BinaryFileResponse
     {
         $result = $this->exporter->write($type->label(), $type->columns($withFirm), $query->lazy(500));
 
         Audit::log(AuditEvent::DataExported, "Excel dışa aktarma: {$type->label()} ({$result['rows']} kayıt)".($scope ? " · {$scope}" : ''), null, [
             'report' => $type->value,
             'rows' => $result['rows'],
-        ]);
+        ], scope: $scopeModel);
 
         return response()->download($result['path'], $type->filename())->deleteFileAfterSend();
     }

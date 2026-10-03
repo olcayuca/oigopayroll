@@ -8,6 +8,7 @@ use App\Models\Definition;
 use App\Models\Employee;
 use App\Models\Firm;
 use App\Support\Audit;
+use App\Support\AuditChanges;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -51,13 +52,22 @@ class SaveDefinition
             'extra' => $type->extraFields() === [] ? null : array_intersect_key($data['extra'] ?? [], $type->extraFields()),
         ];
 
+        $labels = ['code' => 'Kod', 'name' => 'Ad', 'is_active' => 'Aktif', 'parent_id' => $type->parentType()?->singular() ?? 'Üst kayıt', 'extra' => 'Ek bilgiler'];
+
         if ($definition) {
+            $before = AuditChanges::snapshot($definition);
             $definition->update($values);
+            $changes = AuditChanges::between($definition, $before, $labels);
+            $verb = 'güncellendi';
         } else {
             $definition = Definition::create([...$values, 'firm_id' => $firm->id, 'type' => $type]);
+            $changes = AuditChanges::created($definition, ['code', 'name', 'parent_id'], $labels);
+            $verb = 'eklendi';
         }
 
-        Audit::log(AuditEvent::DefinitionChanged, "{$type->singular()} kaydedildi: {$definition->code} {$definition->name}", $firm);
+        if ($changes !== []) {
+            Audit::log(AuditEvent::DefinitionChanged, "{$type->singular()} {$verb}: {$definition->code} {$definition->name}", $definition, ['changes' => $changes]);
+        }
 
         return $definition;
     }

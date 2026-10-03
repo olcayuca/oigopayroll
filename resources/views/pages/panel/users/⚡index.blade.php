@@ -293,6 +293,10 @@ new #[Title('Firma Kullanıcıları')] class extends PanelComponent {
                             {{ collect($grant->effectivePermissions())->map(fn ($p) => \App\Enums\Permission::from($p)->label())->join(', ') }}
                         </flux:table.cell>
                         <flux:table.cell align="end" class="whitespace-nowrap">
+                            @if ($loop->first && auth()->user()->can('viewAudit', $this->firm))
+                                <flux:button size="sm" variant="ghost" icon="clock" :href="route('audit.index', ['kullanici' => $grant->user_id])" wire:navigate
+                                    :tooltip="$grant->user->name.' — işlem geçmişi'" />
+                            @endif
                             @if ($editable)
                                 <flux:button size="sm" variant="ghost" icon="pencil-square" wire:click="editGrant({{ $grant->id }})" />
                                 <flux:button size="sm" variant="ghost" icon="trash" wire:click="removeGrant({{ $grant->id }})" wire:confirm="Bu yetki kaldırılsın mı?" />

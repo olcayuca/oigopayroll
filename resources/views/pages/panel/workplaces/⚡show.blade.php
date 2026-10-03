@@ -196,6 +196,7 @@ new #[Title('İşyeri')] class extends PanelComponent {
             @endif
         </x-slot:badge>
         <x-slot:actions>
+            <x-panel.history-link :filter="['sube' => $workplace->id]" />
             @can('delete', $workplace)
                 <flux:button icon="trash" wire:click="delete" wire:confirm="İşyeri silinsin mi?" class="!text-st-red">Sil</flux:button>
             @endcan

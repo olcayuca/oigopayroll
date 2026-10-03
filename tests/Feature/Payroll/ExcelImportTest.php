@@ -163,6 +163,37 @@ class ExcelImportTest extends PayrollTestCase
         $this->assertSame(100, $workplace->setupPercent());
     }
 
+    /**
+     * Data changing between preview and confirm: nothing is written, the failing rows get their errors.
+     */
+    public function test_confirm_reports_rows_that_became_invalid_after_preview(): void
+    {
+        $firm = Firm::factory()->create();
+        $company = Company::factory()->for($firm)->create(['company_no' => '1001']);
+
+        $import = app(ImportService::class)->preview(ImportType::Workplace, $firm, $this->fillTemplate(ImportType::Workplace, [
+            $this->workplaceRow('1001', '1'),
+            $this->workplaceRow('1001', '2'),
+        ]), 'isyerleri.xlsx');
+        $this->assertTrue($import->canBeConfirmed());
+
+        // Someone registers the first row's SGK sicil meanwhile.
+        $sicil = $this->workplaceRow('1001', '1')['İşyeri SGK Sicil Numarası *'];
+        Workplace::factory()->for(Company::factory()->for($firm))->create(['sgk_registry_no' => $sicil]);
+
+        try {
+            app(ImportService::class)->confirm($import);
+            $this->fail('Expected the confirmation to fail.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('1 satır artık geçersiz', $e->errors()['import'][0]);
+        }
+
+        $import->refresh();
+        $this->assertSame(1, $import->error_rows);
+        $this->assertArrayHasKey('sgk_registry_no', $import->rows->firstWhere('row_number', 2)?->errors ?? []);
+        $this->assertSame(0, $company->workplaces()->count(), 'All or nothing.');
+    }
+
     public function test_workplace_rows_must_reference_a_company_of_the_same_firm(): void
     {
         $firm = Firm::factory()->create();

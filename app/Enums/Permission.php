@@ -16,6 +16,7 @@ enum Permission: string
     case FirmUpdate = 'firm.update';
     case FirmManageUsers = 'firm.manage_users';
     case FirmCreateSubfirm = 'firm.create_subfirm';
+    case FirmViewAudit = 'firm.view_audit';
 
     case CompanyView = 'company.view';
     case CompanyCreate = 'company.create';
@@ -53,6 +54,7 @@ enum Permission: string
             self::FirmUpdate => 'Firma düzenleme',
             self::FirmManageUsers => 'Firma kullanıcılarını ve erişimlerini yönetme',
             self::FirmCreateSubfirm => 'Alt firma oluşturma',
+            self::FirmViewAudit => 'İşlem geçmişini görüntüleme',
             self::CompanyView => 'Şirket görüntüleme',
             self::CompanyCreate => 'Şirket oluşturma',
             self::CompanyUpdate => 'Şirket düzenleme',

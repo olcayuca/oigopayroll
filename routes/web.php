@@ -6,6 +6,7 @@ use App\Http\Controllers\DownloadFirmTemplate;
 use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
 use App\Http\Controllers\DownloadReport;
+use App\Http\Controllers\ExportAuditLog;
 use App\Http\Controllers\ExportFirmRecords;
 use App\Http\Controllers\ImpersonationController;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,8 @@ Route::domain(config('portals.panel'))
         Route::livewire('isyerleri/{workplace}/duzenle', 'pages::panel.workplaces.form')->name('workplaces.edit');
 
         Route::livewire('kurulum', 'pages::panel.setup.wizard')->name('setup.wizard');
+        Route::livewire('islem-gecmisi', 'pages::panel.audit.index')->name('audit.index');
+        Route::get('islem-gecmisi/excel', ExportAuditLog::class)->name('audit.export');
         Route::livewire('tanimlar', 'pages::panel.definitions.index')->name('definitions.index');
 
         Route::livewire('personel', 'pages::panel.employees.index')->name('employees.index');

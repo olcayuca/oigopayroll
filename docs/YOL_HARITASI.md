@@ -150,6 +150,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
   yeni yetkiler employee.view/create/update/delete/import (mevcut kullanıcılara işyeri yetkilerinin karşılığı verildi)
 - ✅ Excel ile personel: kurulum dosyasının Personel Bilgileri sayfası olduğu gibi; sicil no ile güncelleme; eksik tanımlar otomatik — docs/KURULUM_DOSYASI.md §2
 - ✅ Kurulum Sihirbazı: şirket → işyeri → tanımlar → personel → özet, gerçek durumla; gösterge panelinde "Sihirbazla kur"
+- ✅ İşlem Geçmişi (panel → Yönetim): her kayıt firma / şirket / şube kapsamıyla; güncellemelerde alan bazlı "eski → yeni"
+  (şifre, TCKN, IBAN yalnızca "değiştirildi"); Excel aktarımı ve destek görünümü kaynağı; şirket, şube, kullanıcı, modül, tarih,
+  kayıt filtreleri; Excel çıktısı; şirket / işyeri / personel / kullanıcı sayfalarından geçmişe bağlantı.
+  Yetki: "İşlem geçmişini görüntüleme" (firma geneli ya da yalnızca yetkili şirket / şube); kullanıcı yönetimi yetkisi olanlara verildi
 - ⬜ Personel: işten çıkış, Excel'e dışa aktarma, çöp kutusundan geri alma, KVKK aydınlatma onayı (çalışan portalıyla)
 - ❓ Üst çubuktaki bağlam seçici: prototip firma içinde **şirket** seçtiriyor; şimdilik **firma** seçici + şirket kısayolları
 

@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Firm;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\AuditChanges;
 use App\Support\Text;
 use App\Validation\EmployeeInput;
 use App\Validation\EmployeeRules;
@@ -35,7 +36,10 @@ class SaveEmployee
             $data = $this->validate($firm, $input);
             $employee = Employee::create([...$data, 'firm_id' => $firm->id, 'status' => $data['status'] ?? Employee::ACTIVE, 'created_by' => $user?->id]);
 
-            Audit::log(AuditEvent::EmployeeCreated, "Personel oluşturuldu: {$employee->registry_no} {$employee->fullName()}", $employee);
+            Audit::log(AuditEvent::EmployeeCreated, "Personel oluşturuldu: {$employee->registry_no} {$employee->fullName()}", $employee, [
+                'changes' => AuditChanges::created($employee, ['registry_no', 'first_name', 'last_name', 'company_id', 'workplace_id', 'title_id',
+                    'position_id', 'hire_date', 'wage', 'wage_type', 'currency'], EmployeeRules::attributes()),
+            ]);
 
             return $employee;
         });
@@ -55,12 +59,14 @@ class SaveEmployee
         }
 
         return DB::transaction(function () use ($employee, $input) {
+            $before = AuditChanges::snapshot($employee);
             $employee->update($this->validate($employee->firm, $input, $employee));
 
             if ($employee->wasChanged()) {
-                // Field names only: personal data never reaches the log.
-                Audit::log(AuditEvent::EmployeeUpdated, "Personel güncellendi: {$employee->registry_no} {$employee->fullName()}", $employee,
-                    ['fields' => array_values(array_diff(array_keys($employee->getChanges()), ['updated_at', 'tckn_hash']))]);
+                // TCKN / IBAN / hesap no appear masked ("değiştirildi"): their values never reach the log.
+                Audit::log(AuditEvent::EmployeeUpdated, "Personel güncellendi: {$employee->registry_no} {$employee->fullName()}", $employee, [
+                    'changes' => AuditChanges::between($employee, $before, EmployeeRules::attributes()),
+                ]);
             }
 
             return $employee;
@@ -101,6 +107,13 @@ class SaveEmployee
 
         if (isset($data['tckn'])) {
             $data['tckn_hash'] = Employee::hashTckn((string) $data['tckn']);
+        }
+
+        // The TIME column reads back "09:00:00": store the same form so an unchanged time is not "changed".
+        foreach (['shift_start', 'shift_end'] as $field) {
+            if (is_string($data[$field] ?? null) && strlen($data[$field]) === 5) {
+                $data[$field] .= ':00';
+            }
         }
 
         return $this->createNewDefinitions($firm, $data);
