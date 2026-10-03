@@ -29,14 +29,6 @@ class SetupAssistant
     }
 
     /**
-     * Shown in the panel: when configured, and locally also without a key (with a notice).
-     */
-    public static function visible(): bool
-    {
-        return self::configured() || app()->isLocal();
-    }
-
-    /**
      * @param  list<array{role: 'user'|'assistant', text: string}>  $history  ending with the user's question
      */
     public function reply(User $user, Firm $firm, array $history): string

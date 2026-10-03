@@ -9,8 +9,8 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /*
- * Floating setup assistant (OigoAsistan): answers setup questions for the active firm only.
- * The conversation lives in the session, per firm.
+ * Floating setup assistant (OigoAsistan): answers setup questions for the active firm only, plus
+ * shortcuts (note, reminder, calculator) opened as popups. The conversation lives in the session, per firm.
  */
 new class extends Component {
     public const MAX_LENGTH = 1000;
@@ -43,7 +43,7 @@ new class extends Component {
         $user = Auth::user();
         $firm = $this->firm;
         $question = trim($question ?? $this->question);
-        abort_unless($user && $firm && SetupAssistant::visible(), 403);
+        abort_unless($user && $firm, 403);
 
         if ($question === '') {
             return;
@@ -53,7 +53,9 @@ new class extends Component {
         $messages = [...$this->messages, ['role' => 'user', 'text' => SetupAssistant::redact(Str::limit($question, self::MAX_LENGTH, ''))]];
 
         $answer = ! SetupAssistant::configured()
-            ? 'Asistan henüz etkinleştirilmedi: sunucuda ANTHROPIC_API_KEY tanımlı değil (.env). Anahtar eklendiğinde sorularınızı yanıtlayacağım.'
+            ? (app()->isLocal()
+                ? 'Asistan henüz etkinleştirilmedi: sunucuda ANTHROPIC_API_KEY tanımlı değil (.env). Anahtar eklendiğinde sorularınızı yanıtlayacağım.'
+                : 'Asistan şu an soruları yanıtlayamıyor. Not, hatırlatıcı ve hesap makinesi kısayollarını kullanabilirsiniz.')
             : (RateLimiter::attempt('setup-assistant:'.$user->id, 20, fn () => true, 300)
                 ? app(SetupAssistant::class)->reply($user, $firm, $messages)
                 : 'Kısa sürede çok fazla soru sordunuz. Lütfen birkaç dakika sonra tekrar deneyin.');
@@ -77,7 +79,7 @@ new class extends Component {
     }
 }; ?>
 
-<div x-data="{ open: false, pending: '' }" x-on:keydown.escape.window="open = false"
+<div x-data="{ open: false, pending: '' }" x-on:keydown.escape.window="document.querySelector('dialog[open]') || (open = false)"
     x-on:setup-assistant-updated.window="pending = ''; $nextTick(() => $refs.log && ($refs.log.scrollTop = $refs.log.scrollHeight))"
     data-test="setup-assistant">
     <div x-cloak x-show="open" x-transition.opacity.duration.150ms
@@ -99,9 +101,27 @@ new class extends Component {
             </button>
         </div>
 
+        <div class="grid grid-cols-3 gap-2 border-b border-[#EEF2F7] bg-white px-3 py-2.5" data-test="assistant-shortcuts">
+            @foreach ([
+                ['assistant-notes', 'pencil-square', 'Not ekle'],
+                ['assistant-reminders', 'bell-alert', 'Hatırlatıcı'],
+                ['assistant-calculator', 'calculator', 'Hesap makinesi'],
+            ] as [$modal, $icon, $label])
+                <button type="button" x-on:click="$flux.modal('{{ $modal }}').show()"
+                    class="flex flex-col items-center gap-1 rounded-[10px] border-[1.5px] border-[#E0E6EE] bg-white px-1 py-2 text-[11.5px] font-bold text-brand transition hover:border-brand hover:bg-[#F4F8FD]">
+                    <flux:icon :icon="$icon" class="size-[18px] text-mint" />
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+
         @if (! SetupAssistant::configured())
             <div class="border-b border-[#F3E2BF] bg-[#FFF8EA] px-4 py-2.5 text-[12px] font-semibold leading-snug text-[#8A5A14]" data-test="assistant-not-configured">
-                Asistan henüz etkinleştirilmedi: <code>.env</code> dosyasına <code>ANTHROPIC_API_KEY</code> eklenmeli.
+                @if (app()->isLocal())
+                    Asistan henüz etkinleştirilmedi: <code>.env</code> dosyasına <code>ANTHROPIC_API_KEY</code> eklenmeli.
+                @else
+                    Asistan şu an soruları yanıtlayamıyor; kısayollar kullanılabilir.
+                @endif
             </div>
         @endif
 
@@ -165,4 +185,6 @@ new class extends Component {
         <flux:icon.chat-bubble-left-ellipsis class="size-6" x-show="! open" />
         <flux:icon.x-mark class="size-6" x-show="open" x-cloak />
     </button>
+
+    <livewire:assistant-tools />
 </div>

@@ -48,24 +48,22 @@ class SetupAssistantTest extends TestCase
         $this->app->instance(SetupAssistant::class, $this->fake);
     }
 
-    public function test_assistant_is_hidden_without_an_api_key(): void
+    public function test_without_a_key_only_the_shortcuts_work(): void
     {
         config(['services.anthropic.key' => null]);
-        $this->get(route('dashboard'))->assertOk()->assertDontSee('data-test="setup-assistant"', false);
+        $this->get(route('dashboard'))->assertOk()
+            ->assertSee('data-test="setup-assistant"', false)
+            ->assertSee('data-test="assistant-shortcuts"', false)
+            ->assertSee('data-test="assistant-not-configured"', false);
+
+        Livewire::test('setup-assistant')->call('ask', 'Merhaba')->assertSee('kısayollarını kullanabilirsiniz');
+        $this->assertSame(0, $this->fake->calls);
+
+        $this->app['env'] = 'local';
+        Livewire::test('setup-assistant')->assertSee('ANTHROPIC_API_KEY');
 
         config(['services.anthropic.key' => 'test-key']);
-        $this->get(route('dashboard'))->assertOk()->assertSee('data-test="setup-assistant"', false)->assertSee('OigoAsistan')
-            ->assertDontSee('data-test="assistant-not-configured"', false);
-    }
-
-    public function test_locally_the_assistant_is_shown_without_a_key_with_a_notice(): void
-    {
-        config(['services.anthropic.key' => null]);
-        $this->app['env'] = 'local';
-
-        $this->get(route('dashboard'))->assertOk()->assertSee('data-test="assistant-not-configured"', false);
-        Livewire::test('setup-assistant')->call('ask', 'Merhaba')->assertSee('henüz etkinleştirilmedi');
-        $this->assertSame(0, $this->fake->calls);
+        $this->get(route('dashboard'))->assertOk()->assertDontSee('data-test="assistant-not-configured"', false);
     }
 
     public function test_question_is_answered_with_setup_context_and_kept_per_firm(): void

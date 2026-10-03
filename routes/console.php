@@ -2,6 +2,7 @@
 
 use App\Actions\Firms\ManageContracts;
 use App\Models\AuditLog;
+use App\Notifications\DeliverDueReminders;
 use App\Notifications\SendReminders;
 use App\Support\SecuritySettings;
 use App\System\HealthChecks;
@@ -17,6 +18,9 @@ Schedule::call(fn () => app(ManageContracts::class)->renewExpired())
 
 Schedule::call(fn () => app(SendReminders::class)->run())
     ->dailyAt('08:00')->description('Belge ve sözleşme hatırlatmaları');
+
+Schedule::call(fn () => app(DeliverDueReminders::class)->run())
+    ->everyMinute()->description('Kişisel hatırlatıcılar');
 
 Schedule::command('hrd:yedek')->dailyAt('02:30')->withoutOverlapping()->description('Günlük veritabanı yedeği');
 

@@ -158,6 +158,10 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
   kurulum dosyası / Excel aktarımı, sihirbaz); bordro hesaplama ve mevzuat sorularını uzmana yönlendirir. Claude (Anthropic API),
   `ANTHROPIC_API_KEY` yoksa görünmez. Firmanın kurulum durumunu (eksik alanlar, sicil no) kullanıcının görebildiği kadarıyla bilir;
   ad, TCKN, IBAN, şifre gönderilmez, yazılan TCKN / IBAN maskelenir. Sohbet oturumda, firma bazlı; kullanıcı başına 5 dakikada 20 soru
+- ✅ Asistan kısayolları (açılır pencere): **Not ekle** (kişisel, firma bazlı, şifreli saklanır; düzenle / sil),
+  **Hatırlatıcı** (başlık, zaman, not; hızlı seçim 1 saat sonra / yarın / Pazartesi; zamanı gelince bildirim ziline düşer —
+  zamanlayıcı her dakika ve zil yoklamasında teslim eder, her hatırlatma bir kez), **Hesap makinesi** (tarayıcıda; Türkçe sayı
+  biçimi, yüzde, klavye, son 4 işlem, sonucu kopyala). API anahtarı yokken asistan yalnızca kısayollarla görünür
 - ⬜ Personel: işten çıkış, Excel'e dışa aktarma, çöp kutusundan geri alma, KVKK aydınlatma onayı (çalışan portalıyla)
 - ❓ Üst çubuktaki bağlam seçici: prototip firma içinde **şirket** seçtiriyor; şimdilik **firma** seçici + şirket kısayolları
 

@@ -203,7 +203,7 @@
             </flux:toast.group>
         @endpersist
 
-        @if ($firm && \App\Assistant\SetupAssistant::visible())
+        @if ($firm)
             <livewire:setup-assistant />
         @endif
 

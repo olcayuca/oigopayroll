@@ -35,7 +35,7 @@ return [
         ],
     ],
 
-    // Panel kurulum asistanı (App\Assistant\SetupAssistant). Without a key the assistant is hidden.
+    // Panel kurulum asistanı (App\Assistant\SetupAssistant). Without a key it only offers its shortcuts.
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ASSISTANT_MODEL', 'claude-opus-5-5'),
