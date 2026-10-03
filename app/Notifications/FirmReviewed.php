@@ -9,6 +9,11 @@ class FirmReviewed extends HrdNotification
 {
     public function __construct(public readonly Firm $firm, public readonly bool $approved) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Setup;
+    }
+
     public function title(): string
     {
         return $this->approved ? "{$this->firm->name} onaylandı" : "{$this->firm->name} başvurusu reddedildi";

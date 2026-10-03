@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceFirmTwoFactor;
 use App\Http\Middleware\EnforcePortal;
 use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\GuardImpersonation;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             EnforcePortal::class,
             SecureAdminPortal::class,
+            EnforceFirmTwoFactor::class,
             GuardImpersonation::class,
             RequirePolicyConsent::class,
         ]);

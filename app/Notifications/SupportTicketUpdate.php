@@ -21,6 +21,11 @@ class SupportTicketUpdate extends HrdNotification
         private readonly string $level = 'info',
     ) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Support;
+    }
+
     public function title(): string
     {
         return $this->title;

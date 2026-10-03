@@ -41,7 +41,7 @@
             ['label' => 'Destek', 'route' => $firm ? 'support.index' : null, 'active' => request()->routeIs('support.*'),
                 'count' => $firm ? (\App\Models\SupportTicket::query()->visibleInPanel($user, $firm)->where('status', \App\Enums\TicketStatus::AwaitingCustomer)->count() ?: null) : null],
             ['label' => 'Çöp Kutusu', 'route' => 'trash.index', 'active' => request()->routeIs('trash.*')],
-            ['label' => 'Ayarlar', 'route' => 'profile.edit', 'active' => request()->routeIs('profile.*', 'security.*', 'kvkk.edit', 'appearance.*')],
+            ['label' => 'Ayarlar', 'route' => $firm ? 'settings.index' : 'profile.edit', 'active' => request()->routeIs('settings.*', 'profile.*', 'security.*', 'kvkk.edit', 'appearance.*')],
         ])),
     ];
 @endphp

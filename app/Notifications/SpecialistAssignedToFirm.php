@@ -9,6 +9,11 @@ class SpecialistAssignedToFirm extends HrdNotification
 {
     public function __construct(public readonly Firm $firm) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Setup;
+    }
+
     public function title(): string
     {
         return "{$this->firm->name} firmasının sorumlu uzmanı oldunuz";

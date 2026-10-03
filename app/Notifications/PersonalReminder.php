@@ -9,6 +9,11 @@ class PersonalReminder extends HrdNotification
 {
     public function __construct(public readonly UserReminder $reminder) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Reminders;
+    }
+
     public function title(): string
     {
         return "Hatırlatma: {$this->reminder->title}";

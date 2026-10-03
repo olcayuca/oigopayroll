@@ -76,7 +76,11 @@ new class extends Component {
         <button type="button" x-on:click="open = ! open" data-test="firm-switcher"
             class="flex h-11 items-center gap-2.5 rounded-[11px] border-[1.5px] bg-white ps-2 pe-3 text-start transition"
             x-bind:class="open ? 'border-brand' : 'border-[#E8EDF3] hover:border-line-2'" aria-haspopup="true" x-bind:aria-expanded="open">
-            <x-panel.avatar :initials="\App\Support\Text::initials($this->current->name)" size="sm" tone="navy" />
+            @if ($this->current->logo_path)
+                <img src="{{ route('firms.logo', [$this->current, 'v' => $this->current->updated_at?->timestamp]) }}" alt="" class="h-7 w-auto max-w-[56px] object-contain">
+            @else
+                <x-panel.avatar :initials="\App\Support\Text::initials($this->current->name)" size="sm" tone="navy" />
+            @endif
             <span class="hidden min-w-0 flex-col leading-tight sm:flex">
                 <span class="max-w-[220px] truncate text-[13px] font-extrabold text-ink">{{ $this->current->name }}</span>
                 <span class="truncate text-[11px] font-semibold text-muted-2">

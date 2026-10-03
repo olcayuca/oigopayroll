@@ -33,6 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
+ * @property array<string, array<string, bool>>|null $notification_preferences
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AccessGrant> $accessGrants
@@ -66,6 +67,7 @@ class User extends Authenticatable implements PasskeyUser
     protected function casts(): array
     {
         return [
+            'notification_preferences' => 'array',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
@@ -77,6 +79,18 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * Get the user's initials
      */
+    /**
+     * Panel → Ayarlar → Bildirimler: is this channel ("panel" | "mail") switched on for the category? On by default.
+     */
+    public function wantsNotification(\App\Notifications\NotificationCategory $category, string $channel): bool
+    {
+        if ($category === \App\Notifications\NotificationCategory::System) {
+            return true;
+        }
+
+        return (bool) ($this->notification_preferences[$category->value][$channel] ?? true);
+    }
+
     public function initials(): string
     {
         $initials = Str::initials($this->name, true);

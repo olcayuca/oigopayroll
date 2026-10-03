@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -32,11 +33,25 @@ abstract class HrdNotification extends Notification
     }
 
     /**
+     * Group the user can switch on or off (Panel → Ayarlar → Bildirimler).
+     */
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::System;
+    }
+
+    /**
      * @return list<string>
      */
     public function via(object $notifiable): array
     {
-        return self::mailEnabled() ? ['database', 'mail'] : ['database'];
+        $channels = self::mailEnabled() ? ['database', 'mail'] : ['database'];
+
+        if (! $notifiable instanceof User) {
+            return $channels;
+        }
+
+        return array_values(array_filter($channels, fn (string $channel) => $notifiable->wantsNotification($this->category(), $channel === 'database' ? 'panel' : 'mail')));
     }
 
     /**

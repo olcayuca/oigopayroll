@@ -9,6 +9,11 @@ class DocumentExpiring extends HrdNotification
 {
     public function __construct(public readonly FirmDocument $document, public readonly bool $expired) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Documents;
+    }
+
     public function title(): string
     {
         return $this->expired

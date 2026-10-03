@@ -34,6 +34,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $phone
  * @property string|null $email
  * @property string|null $address
+ * @property string|null $kep_address
+ * @property string|null $website
+ * @property string|null $mersis_no
+ * @property string|null $logo_path Panel → Ayarlar → Marka & Logo (private disk).
+ * @property array<string, mixed>|null $settings FirmSettings: payroll defaults, security.
  * @property FirmStatus $status
  * @property FirmSource $source
  * @property int|null $created_by
@@ -57,6 +62,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'parent_firm_id', 'name', 'title', 'tax_number', 'tax_office', 'contact_name', 'phone', 'email', 'address',
     'status', 'source', 'created_by', 'reviewed_by', 'reviewed_at', 'rejection_reason',
+    'kep_address', 'website', 'mersis_no', 'logo_path', 'settings',
 ])]
 class Firm extends Model
 {
@@ -220,6 +226,7 @@ class Firm extends Model
             'source' => FirmSource::class,
             'reviewed_at' => 'datetime',
             'setup_approved_at' => 'datetime',
+            'settings' => 'array',
             'specialist_assigned_at' => 'datetime',
         ];
     }

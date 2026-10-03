@@ -188,6 +188,18 @@ Sıra: **1) Altyapı → 2) Admin → 3) Panel (Word dosyasının tamamı) → 4
 - ✅ Şifre alanları maskeli, yetkiyle görüntüleme (loglu)
 - ✅ Excel ile toplu işyeri: şablon indir → yükle → kontrol/önizleme → onayla
 
+### 3.2.2 Ayarlar (panel → Yönetim → Ayarlar, prototip 35-ayarlar)
+- ✅ Şirket Bilgileri: unvan / VKN (HRD yönetir, salt okunur), yetkili, telefon, e-posta, KEP, web, MERSİS, yazışma adresi
+- ✅ Bordro Varsayılanları: ödeme günü, ücret tipi, net yuvarlama, FM çarpanı, aylık gün, Hazine indirimi, asgari ücret istisnası,
+  otomatik BES — ücret tipi / istisna / BES yeni personel formunu doldurur, diğerleri bordro hesaplamasında kullanılacak
+- ⏸ Onay Akışı: bordro modülüyle (YAKINDA)
+- ✅ Bildirimler: kullanıcı bazında kategori × (e-posta, panel); KVKK ve zorunlu bildirimler kapatılamaz
+- ✅ Güvenlik: firma için iki adımlı doğrulama zorunluluğu (zorunluysa kullanıcı önce 2FA kurar; destek görünümü muaf),
+  hassas veri maskeleme bilgisi, kendi hesabının 2FA durumu ve güvenlik sayfası
+- ✅ Marka & Logo: firma logosu (yetkili erişimli), üst çubuktaki firma seçicide görünür; PDF üst bilgi önizlemesi
+- ✅ Tercihlerim: ad, e-posta, görünüm (açık / koyu / sistem); şifre ve KVKK sayfalarına geçiş
+- Firma bölümleri yalnızca firma düzenleme yetkisiyle değişir; diğer kullanıcılar salt okunur görür
+
 ### 3.2.1 Destek (panel → Yönetim → Destek, admin → Destek Talepleri)
 - ✅ Firma kullanıcısı talep açar: konu, kategori, modül, öncelik, açıklama, ek dosya (PDF / görsel / Excel, en fazla 10 MB)
 - ✅ Yeni talep: HRD süper adminlerine ve firmanın sorumlu bordro uzmanına bildirim + e-posta; Sistem Ayarları'ndaki

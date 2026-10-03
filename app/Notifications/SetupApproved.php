@@ -10,6 +10,11 @@ class SetupApproved extends HrdNotification
 {
     public function __construct(public readonly Firm $firm, public readonly User $approver) {}
 
+    public function category(): NotificationCategory
+    {
+        return NotificationCategory::Setup;
+    }
+
     public function title(): string
     {
         return "Kurulum onaylandı: {$this->firm->name}";

@@ -7,6 +7,7 @@ use App\Http\Controllers\DownloadImportTemplate;
 use App\Http\Controllers\DownloadPersonalData;
 use App\Http\Controllers\DownloadReport;
 use App\Http\Controllers\DownloadSupportAttachment;
+use App\Http\Controllers\ShowFirmLogo;
 use App\Http\Controllers\ExportAuditLog;
 use App\Http\Controllers\ExportFirmRecords;
 use App\Http\Controllers\ImpersonationController;
@@ -97,6 +98,9 @@ Route::domain(config('portals.panel'))
         Route::get('disa-aktar/{type}', ExportFirmRecords::class)->whereIn('type', ['sirketler', 'isyerleri', 'personel'])->name('exports.download');
 
         Route::livewire('kullanicilar', 'pages::panel.users.index')->name('users.index');
+
+        Route::livewire('ayarlar', 'pages::panel.settings.index')->name('settings.index');
+        Route::get('firma-logo/{firm}', ShowFirmLogo::class)->name('firms.logo');
 
         Route::livewire('destek-talepleri', 'pages::panel.support.index')->name('support.index');
         Route::livewire('destek-talepleri/{ticket}', 'pages::support.show')->name('support.show');

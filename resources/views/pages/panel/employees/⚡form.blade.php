@@ -143,12 +143,13 @@ new #[Title('Personel')] class extends PanelComponent {
         } else {
             $this->authorize('create', [Employee::class, $this->firm]);
 
-            // Sensible defaults of a new record (the same as the setup file's most common values).
+            // Sensible defaults of a new record (the setup file's most common values and Ayarlar → Bordro Varsayılanları).
+            $defaults = \App\Support\FirmSettings::payroll($this->firm);
             $this->form = array_merge($this->form, [
                 'currency' => 'TRY', 'wage_period' => 'Aylık', 'insurance_branch' => 'Tüm Sigorta Kolları (Zorunlu)',
                 'sgk_status' => 'Normal', 'duty_code' => 'İşçi', 'sgk_document_type' => '01', 'tax_exemption_start_month' => (string) now()->month,
-                'cumulative_tax_base' => '0', 'previous_sgk_base_1' => '0', 'previous_sgk_base_2' => '0', 'bes_rate' => '3',
-                'is_minimum_wage' => false, 'minimum_wage_exemption' => true, 'is_shift_worker' => false,
+                'cumulative_tax_base' => '0', 'previous_sgk_base_1' => '0', 'previous_sgk_base_2' => '0', 'bes_rate' => $defaults['auto_bes'] ? '3' : '0',
+                'wage_type' => $defaults['wage_type'], 'is_minimum_wage' => false, 'minimum_wage_exemption' => $defaults['minimum_wage_exemption'], 'is_shift_worker' => false,
                 'shift_start' => '09:00', 'shift_end' => '18:00', 'contract_type' => 'Tam Zamanlı', 'employment_type' => 'Belirsiz Süreli',
                 'company_id' => (string) ($this->companies->count() === 1 ? $this->companies->first()->id : ''),
                 'workplace_id' => (string) ($this->workplaces->count() === 1 ? $this->workplaces->first()->id : ''),
