@@ -54,7 +54,18 @@ class SetupAssistantTest extends TestCase
         $this->get(route('dashboard'))->assertOk()->assertDontSee('data-test="setup-assistant"', false);
 
         config(['services.anthropic.key' => 'test-key']);
-        $this->get(route('dashboard'))->assertOk()->assertSee('data-test="setup-assistant"', false)->assertSee('OigoAsistan');
+        $this->get(route('dashboard'))->assertOk()->assertSee('data-test="setup-assistant"', false)->assertSee('OigoAsistan')
+            ->assertDontSee('data-test="assistant-not-configured"', false);
+    }
+
+    public function test_locally_the_assistant_is_shown_without_a_key_with_a_notice(): void
+    {
+        config(['services.anthropic.key' => null]);
+        $this->app['env'] = 'local';
+
+        $this->get(route('dashboard'))->assertOk()->assertSee('data-test="assistant-not-configured"', false);
+        Livewire::test('setup-assistant')->call('ask', 'Merhaba')->assertSee('henüz etkinleştirilmedi');
+        $this->assertSame(0, $this->fake->calls);
     }
 
     public function test_question_is_answered_with_setup_context_and_kept_per_firm(): void

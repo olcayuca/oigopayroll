@@ -43,7 +43,7 @@ new class extends Component {
         $user = Auth::user();
         $firm = $this->firm;
         $question = trim($question ?? $this->question);
-        abort_unless($user && $firm && SetupAssistant::configured(), 403);
+        abort_unless($user && $firm && SetupAssistant::visible(), 403);
 
         if ($question === '') {
             return;
@@ -52,9 +52,11 @@ new class extends Component {
         $this->question = '';
         $messages = [...$this->messages, ['role' => 'user', 'text' => SetupAssistant::redact(Str::limit($question, self::MAX_LENGTH, ''))]];
 
-        $answer = RateLimiter::attempt('setup-assistant:'.$user->id, 20, fn () => true, 300)
-            ? app(SetupAssistant::class)->reply($user, $firm, $messages)
-            : 'Kısa sürede çok fazla soru sordunuz. Lütfen birkaç dakika sonra tekrar deneyin.';
+        $answer = ! SetupAssistant::configured()
+            ? 'Asistan henüz etkinleştirilmedi: sunucuda ANTHROPIC_API_KEY tanımlı değil (.env). Anahtar eklendiğinde sorularınızı yanıtlayacağım.'
+            : (RateLimiter::attempt('setup-assistant:'.$user->id, 20, fn () => true, 300)
+                ? app(SetupAssistant::class)->reply($user, $firm, $messages)
+                : 'Kısa sürede çok fazla soru sordunuz. Lütfen birkaç dakika sonra tekrar deneyin.');
 
         $messages[] = ['role' => 'assistant', 'text' => $answer];
         session([$this->sessionKey() => array_slice($messages, -SetupAssistant::MAX_HISTORY * 2)]);
@@ -96,6 +98,12 @@ new class extends Component {
                 <flux:icon.x-mark class="size-4" />
             </button>
         </div>
+
+        @if (! SetupAssistant::configured())
+            <div class="border-b border-[#F3E2BF] bg-[#FFF8EA] px-4 py-2.5 text-[12px] font-semibold leading-snug text-[#8A5A14]" data-test="assistant-not-configured">
+                Asistan henüz etkinleştirilmedi: <code>.env</code> dosyasına <code>ANTHROPIC_API_KEY</code> eklenmeli.
+            </div>
+        @endif
 
         <div x-ref="log" class="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[#F7F9FC] p-4">
             <div class="flex">
